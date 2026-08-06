@@ -1,5 +1,6 @@
 import express from "express";
 import productRoutes from "./routes/Productroutes.js"
+import connectDatabase from "./database/connection.js";
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.get("/", (req, res) => {
 app.get("/teste", (req, res) => {
     res.send("Servidor de teste funcionando!");
 });
+
 
 
 

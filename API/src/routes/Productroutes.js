@@ -52,4 +52,30 @@ router.post("/", (req, res) => {
         product: newProduct
     });
 });
+
+router.delete("/:id", (req, res) => {
+    const productId = parseInt(req.params.id);
+    const productIndex = products.findIndex(product => product.id === productId);
+
+    if (productIndex === -1) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+    }
+
+    products.splice(productIndex, 1);
+
+    res.json({ message: "Produto excluído com sucesso!" });
+});
+
+router.put("/:id", (req, res) => {
+    const productId = parseInt(req.params.id);
+    const productIndex = products.findIndex(product => product.id === productId);
+
+    if (productIndex === -1) {
+        return res.status(404).json({ message: "Produto não encontrado" });
+    }
+
+    products[productIndex] = { ...products[productIndex], ...req.body };
+
+    res.json({ message: "Produto atualizado com sucesso!", product: products[productIndex] });
+});
 export default router;
