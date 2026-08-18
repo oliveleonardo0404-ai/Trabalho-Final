@@ -1,0 +1,8 @@
+{
+  "nome": "Thor",
+  "foto_url": "https://example.com/thor.jpg",
+  "raca": "Labrador",
+  "porte": "Grande",
+  "data_nascimento": "2021-02-15T00:00:00.000Z",
+  "cliente": "ID_DO_CLIENTE_AQUI"
+}

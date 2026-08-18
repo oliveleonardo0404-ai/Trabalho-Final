@@ -1,0 +1,20 @@
+.app-shell {
+  width: 100%;
+  min-height: 100vh;
+  background: #f5f1ee;
+  color: #2f241f;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+* {
+  box-sizing: border-box;
+}

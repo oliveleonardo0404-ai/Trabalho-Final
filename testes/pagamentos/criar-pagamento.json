@@ -1,0 +1,7 @@
+{
+  "cliente": "ID_DO_CLIENTE_AQUI",
+  "valor": 120.00,
+  "metodo": "Pix",
+  "status": "pendente",
+  "agendamento": "ID_DO_AGENDAMENTO_AQUI"
+}

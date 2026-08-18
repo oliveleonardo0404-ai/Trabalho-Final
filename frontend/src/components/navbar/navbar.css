@@ -1,0 +1,80 @@
+.navbar {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 44px;
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom: 1px solid rgba(58, 35, 26, 0.08);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  color: #2d1d1a;
+}
+
+.brand-mark {
+  font-size: 1.1rem;
+  color: #b7704d;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 999px;
+  text-decoration: none;
+  color: #4c3a31;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.navbar-button.accent {
+  background: #7c4c34;
+  color: white;
+}
+
+.navbar-button.logout-button {
+  border: 1px solid rgba(124, 76, 52, 0.5);
+  background: transparent;
+  color: #4c3a31;
+  cursor: pointer;
+}
+
+.navbar-button.active {
+  box-shadow: 0 8px 18px rgba(95, 62, 46, 0.12);
+}
+
+@media (max-width: 620px) {
+  .navbar {
+    padding: 0 18px;
+  }
+
+  .navbar-brand {
+    font-size: 1.35rem;
+  }
+
+  .navbar-actions {
+    gap: 6px;
+  }
+
+  .navbar-button {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+}
