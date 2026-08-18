@@ -6,28 +6,30 @@ export type LoggedUser = {
   cpf?: string
   numero?: string
   nascimento?: string
+  [key: string]: unknown
 }
 
 const STORAGE_KEY = 'petcare_user'
 
-export const getStoredUser = (): LoggedUser | null => {
-  const raw = localStorage.getItem(STORAGE_KEY)
-  if (!raw) return null
+export function getStoredUser(): LoggedUser | null {
+  const storedUser = localStorage.getItem(STORAGE_KEY)
+
+  if (!storedUser) {
+    return null
+  }
 
   try {
-    return JSON.parse(raw) as LoggedUser
+    return JSON.parse(storedUser) as LoggedUser
   } catch {
     localStorage.removeItem(STORAGE_KEY)
     return null
   }
 }
 
-export const setStoredUser = (user: LoggedUser) => {
+export function setStoredUser(user: LoggedUser): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
 }
 
-export const clearStoredUser = () => {
+export function clearStoredUser(): void {
   localStorage.removeItem(STORAGE_KEY)
 }
-
-export const isLoggedIn = () => Boolean(getStoredUser())

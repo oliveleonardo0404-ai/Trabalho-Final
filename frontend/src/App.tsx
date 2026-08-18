@@ -7,30 +7,20 @@ import LoginPage from './pages/homeLogin/login'
 import CadastroPage from './pages/homeLogin/cadastro'
 import AgendamentoPage from './pages/agendamentos/agendamentos'
 import PagamentoPage from './pages/pagamentos/pagamento'
-import { getStoredUser } from './services/auth'
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const user = getStoredUser()
-  return user ? <>{children}</> : <Navigate to="/login" replace />
-}
-
-function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
-  const user = getStoredUser()
-  return !user ? <>{children}</> : <Navigate to="/home" replace />
-}
 
 function App() {
   return (
     <BrowserRouter>
       <div className="app-shell">
         <Routes>
-          <Route path="/" element={<PublicOnlyRoute><HomePublicPage /></PublicOnlyRoute>} />
-          <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-          <Route path="/perfil" element={<ProtectedRoute><PerfilPage /></ProtectedRoute>} />
-          <Route path="/agendamentos" element={<ProtectedRoute><AgendamentoPage /></ProtectedRoute>} />
-          <Route path="/pagamento" element={<ProtectedRoute><PagamentoPage /></ProtectedRoute>} />
-          <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-          <Route path="/cadastro" element={<PublicOnlyRoute><CadastroPage /></PublicOnlyRoute>} />
+          <Route path="/" element={<HomePublicPage />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/perfil" element={<PerfilPage />} />
+          <Route path="/agendamentos" element={<AgendamentoPage />} />
+          <Route path="/pagamento" element={<PagamentoPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/cadastro" element={<CadastroPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
