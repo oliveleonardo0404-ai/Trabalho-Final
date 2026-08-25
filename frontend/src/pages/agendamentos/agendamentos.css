@@ -77,6 +77,43 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+.booking-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.booking-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid #eaded5;
+  border-radius: 12px;
+  background: #fffaf7;
+}
+
+.booking-card h3,
+.booking-card p,
+.booking-card span {
+  margin: 0;
+}
+
+.booking-card h3 {
+  color: #432d26;
+}
+
+.booking-card p,
+.booking-card span {
+  color: #6f5b51;
+}
+
+.booking-card .save-button {
+  align-self: flex-start;
+  margin-top: 8px;
+  text-decoration: none;
+}
+
 @media (max-width: 700px) {
   .field-group {
     grid-template-columns: 1fr;

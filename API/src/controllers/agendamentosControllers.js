@@ -1,5 +1,22 @@
 import AgendamentoModel from '../models/agendamento.js';
 
+const parseValidDate = (value) => {
+    const dateText = String(value).slice(0, 10);
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateText);
+    const date = new Date(value);
+
+    if (!match || Number.isNaN(date.getTime())) return null;
+
+    const expectedDate = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+    if (
+        expectedDate.getUTCFullYear() !== Number(match[1])
+        || expectedDate.getUTCMonth() !== Number(match[2]) - 1
+        || expectedDate.getUTCDate() !== Number(match[3])
+    ) return null;
+
+    return date;
+};
+
 class agendamentosController {
     // Cria um novo agendamento ligando cliente, pet e serviço ao período informado.
     static async create(req, res) {
@@ -8,6 +25,12 @@ class agendamentosController {
 
             if (!cliente || !pet || !servico || !data_entrada || !data_saida) {
                 return res.status(400).json({ message: 'Todos os dados são obrigatórios.' });
+            }
+
+            const dataEntrada = parseValidDate(data_entrada);
+            const dataSaida = parseValidDate(data_saida);
+            if (!dataEntrada || !dataSaida || dataSaida <= dataEntrada) {
+                return res.status(400).json({ message: 'Informe um período de datas válido.' });
             }
 
             const novoAgendamento = await AgendamentoModel.create({

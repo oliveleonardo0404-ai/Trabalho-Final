@@ -19,7 +19,15 @@ class pagamentosController {
             const agendamentoExists = await AgendamentoModel.findById(agendamento);
             if (!agendamentoExists) return res.status(400).json({ message: 'Agendamento não encontrado.' });
 
+            if (String(agendamentoExists.cliente) !== String(cliente)) {
+                return res.status(403).json({ message: 'O agendamento não pertence a este cliente.' });
+            }
+
             const novoPagamento = await PagamentoModel.create({ cliente, agendamento, valor, metodo, status, data_pagamento });
+
+            if (status === 'PAGO') {
+                await AgendamentoModel.findByIdAndUpdate(agendamento, { status: 'PAGO' });
+            }
 
             return res.status(201).json({ message: 'Pagamento criado com sucesso', data: novoPagamento });
         } catch (error) {

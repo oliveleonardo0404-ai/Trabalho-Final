@@ -4,6 +4,38 @@
   padding: 26px 28px 22px;
 }
 
+.pix-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px 20px;
+  border: 1px solid #d9cfc6;
+  border-radius: 12px;
+  background: #fffaf7;
+}
+
+.pix-box h3,
+.pix-box p {
+  margin: 0;
+}
+
+.pix-box h3 {
+  color: #432d26;
+  margin-bottom: 8px;
+}
+
+.pix-box p {
+  color: #6f5b51;
+}
+
+@media (max-width: 520px) {
+  .pix-box {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 @media (max-width: 700px) {
   .pagamento-card {
     padding: 20px 18px;

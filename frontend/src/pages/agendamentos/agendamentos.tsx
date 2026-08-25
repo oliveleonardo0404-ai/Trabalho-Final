@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../../components/navbar/navbar'
 import { getStoredUser } from '../../services/auth'
+import { dateInputToIso, formatDateInput, parseDateInput } from '../../services/validation'
 import './agendamentos.css'
 
 type Pet = {
@@ -26,11 +27,22 @@ type AgendamentoForm = {
   data_saida: string
 }
 
+type Agendamento = {
+  _id: string
+  cliente?: string | { _id?: string }
+  pet?: string | { nome?: string }
+  servico?: string | { nome?: string; preco_diaria?: number }
+  data_entrada: string
+  data_saida: string
+  status?: string
+}
+
 function AgendamentoPage() {
   const navigate = useNavigate()
   const user = getStoredUser()
   const [pets, setPets] = useState<Pet[]>([])
   const [servicos, setServicos] = useState<Servico[]>([])
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
   const [form, setForm] = useState<AgendamentoForm>({
     pet: '',
     servico: '',
@@ -53,6 +65,7 @@ function AgendamentoPage() {
       try {
         const petsResponse = await fetch('http://localhost:3001/api/pets')
         const servicosResponse = await fetch('http://localhost:3001/api/servicos')
+        const agendamentosResponse = await fetch('http://localhost:3001/api/agendamentos')
 
         if (petsResponse.ok) {
           const allPets = await petsResponse.json()
@@ -66,6 +79,16 @@ function AgendamentoPage() {
         if (servicosResponse.ok) {
           const servicesData = await servicosResponse.json()
           setServicos(servicesData)
+        }
+
+        if (agendamentosResponse.ok) {
+          const allAgendamentos: Agendamento[] = await agendamentosResponse.json()
+          const ownerAgendamentos = allAgendamentos.filter((agendamento) => {
+            const cliente = agendamento.cliente
+            const clienteId = typeof cliente === 'string' ? cliente : cliente?._id
+            return clienteId === (user._id || user.id)
+          })
+          setAgendamentos(ownerAgendamentos)
         }
       } catch {
         setError('Não foi possível carregar pets e serviços no momento.')
@@ -82,6 +105,12 @@ function AgendamentoPage() {
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target
+
+    if (name === 'data_entrada' || name === 'data_saida') {
+      setForm((prev) => ({ ...prev, [name]: formatDateInput(value) }))
+      return
+    }
+
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -102,8 +131,13 @@ function AgendamentoPage() {
       return
     }
 
-    const dataEntrada = new Date(form.data_entrada)
-    const dataSaida = new Date(form.data_saida)
+    const dataEntrada = parseDateInput(form.data_entrada)
+    const dataSaida = parseDateInput(form.data_saida)
+
+    if (!dataEntrada || !dataSaida) {
+      setError('Informe as datas válidas no formato DD/MM/AAAA.')
+      return
+    }
 
     if (dataSaida <= dataEntrada) {
       setError('A data de saída precisa ser posterior à data de entrada.')
@@ -120,8 +154,8 @@ function AgendamentoPage() {
           cliente: user._id || user.id,
           pet: form.pet,
           servico: form.servico,
-          data_entrada: dataEntrada.toISOString(),
-          data_saida: dataSaida.toISOString(),
+          data_entrada: dateInputToIso(form.data_entrada),
+          data_saida: dateInputToIso(form.data_saida),
           status: 'PENDENTE',
         }),
       })
@@ -134,6 +168,15 @@ function AgendamentoPage() {
 
       setSuccess('Agendamento criado com sucesso!')
       setForm({ pet: '', servico: '', data_entrada: '', data_saida: '' })
+      const refreshedResponse = await fetch('http://localhost:3001/api/agendamentos')
+      if (refreshedResponse.ok) {
+        const allAgendamentos: Agendamento[] = await refreshedResponse.json()
+        setAgendamentos(allAgendamentos.filter((agendamento) => {
+          const cliente = agendamento.cliente
+          const clienteId = typeof cliente === 'string' ? cliente : cliente?._id
+          return clienteId === (user._id || user.id)
+        }))
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar agendamento')
     } finally {
@@ -188,12 +231,12 @@ function AgendamentoPage() {
             <div className="field-group">
               <label className="field">
                 <span>Data de entrada</span>
-                <input type="date" name="data_entrada" value={form.data_entrada} onChange={handleChange} required />
+                <input type="text" name="data_entrada" inputMode="numeric" placeholder="DD/MM/AAAA" maxLength={10} value={form.data_entrada} onChange={handleChange} required />
               </label>
 
               <label className="field">
                 <span>Data de saída</span>
-                <input type="date" name="data_saida" value={form.data_saida} onChange={handleChange} required />
+                <input type="text" name="data_saida" inputMode="numeric" placeholder="DD/MM/AAAA" maxLength={10} value={form.data_saida} onChange={handleChange} required />
               </label>
             </div>
 
@@ -223,6 +266,43 @@ function AgendamentoPage() {
               </Link>
             </div>
           </form>
+        </section>
+
+        <section className="card perfil-card agendamento-card">
+          <div className="card-title-wrap">
+            <span className="card-icon">💰</span>
+            <h2>Meus Agendamentos</h2>
+          </div>
+
+          {agendamentos.length === 0 ? (
+            <p className="subtitle">Você ainda não possui agendamentos.</p>
+          ) : (
+            <div className="booking-grid">
+              {agendamentos.map((agendamento) => {
+                const petName = typeof agendamento.pet === 'string' ? agendamento.pet : agendamento.pet?.nome
+                const serviceName = typeof agendamento.servico === 'string' ? agendamento.servico : agendamento.servico?.nome
+                const isPending = agendamento.status === 'PENDENTE'
+
+                return (
+                  <article key={agendamento._id} className="booking-card">
+                    <div className="booking-pill">{agendamento.status ?? 'PENDENTE'}</div>
+                    <h3>{petName || 'Pet'}</h3>
+                    <p>{serviceName || 'Serviço'}</p>
+                    <span>
+                      {new Date(agendamento.data_entrada).toLocaleDateString('pt-BR')}
+                      {' até '}
+                      {new Date(agendamento.data_saida).toLocaleDateString('pt-BR')}
+                    </span>
+                    {isPending && (
+                      <Link to={`/pagamento?agendamento=${agendamento._id}`} className="save-button">
+                        Pagar agendamento
+                      </Link>
+                    )}
+                  </article>
+                )
+              })}
+            </div>
+          )}
         </section>
       </main>
     </div>

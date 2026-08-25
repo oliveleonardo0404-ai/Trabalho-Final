@@ -1,0 +1,173 @@
+
+PLANEJAMENTO DO SISTEMA PETCARE
+===============================
+
+1. OBJETIVO
+-----------
+O PetCare e um sistema para creche e hospedagem de animais. O tutor pode criar
+uma conta, fazer login, cadastrar pets, consultar servicos, criar agendamentos e
+registrar pagamentos. O frontend apresenta as telas e a API organiza os dados no
+MongoDB.
+
+2. TECNOLOGIAS E ESTRUTURA
+--------------------------
+- Frontend: React, TypeScript, Vite e React Router.
+- Backend: Node.js, Express e JavaScript com modulos ES.
+- Banco: MongoDB acessado pelo Mongoose.
+- Senhas: bcryptjs.
+- Comunicacao: HTTP com fetch e dados JSON.
+
+API/server.js inicia o backend, conecta o banco e registra as rotas. A pasta
+API/src/routes define os enderecos HTTP, controllers processam as requisicoes e
+models definem os documentos e regras do MongoDB. No frontend, App.tsx define as
+rotas, pages contem as telas e services contem funcoes compartilhadas.
+
+3. FUNCOES DO FRONTEND
+----------------------
+
+App()
+E o componente principal. BrowserRouter permite navegar sem recarregar a pagina,
+Routes agrupa as rotas e Route liga cada endereco a um componente. A rota * envia
+caminhos desconhecidos para a pagina inicial publica.
+
+getStoredUser()
+Busca a chave petcare_user no localStorage. Se nao existir, retorna null. Quando
+existe, JSON.parse converte o texto salvo em objeto. Se o valor estiver corrompido,
+remove a chave e retorna null.
+
+setStoredUser(user)
+Converte o objeto do cliente em texto com JSON.stringify e salva em petcare_user.
+E usada depois do cadastro e do login.
+
+clearStoredUser()
+Remove petcare_user do navegador. E usada pelo logout para encerrar a sessao local.
+
+validation.ts
+formatDateInput remove tudo que nao e numero, limita a oito digitos e monta a
+data no formato DD/MM/AAAA. Isso evita que o navegador troque o dia pelo mes.
+parseDateInput separa dia, mes e ano, cria a data em UTC e compara os componentes
+novamente. Assim, mes 14, dia 32 e datas como 31/02/2026 sao rejeitados.
+dateInputToIso converte uma data validada para o formato ISO enviado pela API.
+isValidCpf calcula os dois digitos verificadores do CPF e rejeita sequencias iguais.
+
+LoginPage()
+Controla e-mail, senha, erro e carregamento com useState. handleSubmit impede o
+envio padrao do formulario, valida os campos, chama POST /api/clientes/login,
+salva o usuario retornado e navega para /home.
+
+CadastroPage()
+Controla os dados do novo cliente. formatCpf e formatPhone aplicam mascaras durante
+a digitacao. handleChange atualiza o campo alterado. validateCadastro verifica
+nome, e-mail, CPF, telefone, nascimento e senha. handleSubmit envia os dados para
+POST /api/clientes, salva o cliente criado e navega para /perfil.
+
+HomePublicPage()
+Exibe a apresentacao para visitantes. Os Links direcionam para login ou cadastro
+e esta pagina nao depende de usuario salvo.
+
+HomePage()
+Exibe a area principal do tutor. getStoredUser identifica o usuario atual e
+useEffect busca os agendamentos da API. O filtro compara o cliente do agendamento
+ou do pet com o ID do usuario e mostra somente seus registros.
+isLoggedIn verifica se existe usuario salvo. Por isso o botao principal leva
+visitantes para /login, mas leva usuarios logados diretamente para /agendamentos
+com o texto Agendar Visita. O botao Criar Conta aparece somente para visitantes.
+
+PerfilPage()
+Verifica a sessao ao abrir. Sem usuario, navigate('/login') redireciona. loadPets
+busca os pets e filtra os que pertencem ao tutor atual. handlePetChange atualiza o
+formulario. handlePetSubmit valida os dados, envia POST /api/pets com o ID do tutor
+e recarrega a lista depois do cadastro.
+
+AgendamentoPage()
+Busca pets e servicos ao abrir e filtra os pets do usuario. selectedService encontra
+o servico escolhido para montar o resumo. handleChange atualiza o formulario.
+handleSubmit valida os campos e as datas, garantindo que a saida seja posterior a
+entrada, e envia POST /api/agendamentos com status PENDENTE.
+
+PagamentoPage()
+Verifica a existencia do usuario e redireciona visitantes. formattedValue exibe o
+valor com duas casas decimais. handleChange atualiza metodo e valor. handleSubmit
+valida o valor e envia POST /api/pagamentos. O campo agendamento deve receber um ID
+real existente no banco. Quando o metodo e PIX, QRCodeSVG exibe um QR Code com os
+dados do agendamento. Depois da confirmacao, a pagina volta para /home.
+
+Navbar()
+Usa useLocation para identificar a pagina ativa e useNavigate para navegar por
+codigo. handleGoHome manda usuarios logados para /home e visitantes para /. 
+handleLogout chama clearStoredUser e direciona para /login.
+
+4. FUNCOES DO BACKEND
+---------------------
+
+connectDatabase()
+Carrega o arquivo .env com dotenv e chama mongoose.connect usando MONGODB_URI.
+Quando a conexao falha, informa o erro e encerra o processo para a API nao operar
+sem banco.
+
+Rotas Express
+Cada router associa um metodo HTTP a um controller: POST cria, GET consulta, PUT
+atualiza e DELETE remove. API/server.js monta os prefixos /api/clientes,
+/api/pets, /api/agendamentos, /api/avaliacoes, /api/servicos e /api/pagamentos.
+
+clientesController.create()
+Limpa textos, valida campos obrigatorios, nome, e-mail, CPF, telefone, nascimento
+e senha. Verifica duplicidade de e-mail ou CPF, gera o hash com bcrypt e salva o
+cliente sem devolver a senha.
+
+clientesController.login()
+Procura pelo e-mail e compara a senha recebida com o hash usando bcrypt.compare.
+Quando esta correta, remove a senha do objeto retornado.
+
+clientesController.isValidCpf()
+Remove a formatacao do CPF, rejeita numeros repetidos e calcula os dois digitos
+verificadores. Por isso um CPF digitado somente com 11 numeros, mas com digitos
+incorretos, nao e aceito; geradores normalmente ja fornecem um CPF matematicamente
+valido.
+
+clientesController.getAll(), getById(), update() e delete()
+Implementam listar, buscar por ID, atualizar e excluir clientes. As leituras ocultam
+o campo senha.
+
+petsController.create()
+Valida nome, raca, porte, data de nascimento e URL opcional. Cria o pet vinculado ao
+cliente. getAll() e getById() usam populate para trazer o cliente relacionado.
+
+agendamentosController.create()
+Confere cliente, pet, servico e datas antes de criar o agendamento. getAll() e
+getById() usam populate para incluir cliente, pet e servico. parseValidDate rejeita
+datas com mes ou dia inexistente e tambem garante que a saida seja posterior a entrada.
+
+pagamentosController.create()
+Verifica cliente e agendamento obrigatorios e confirma que ambos existem antes de
+gravar. O model aceita metodo PIX, CARTAO ou DINHEIRO e status PENDENTE, PAGO ou
+CANCELADO. Quando o pagamento chega com status PAGO, o agendamento relacionado
+tambem e atualizado para PAGO, removendo a pendencia exibida na home.
+
+servicosController.create() e avaliacoesController.create()
+Criam servicos e avaliacoes. O controller de avaliacoes impede mais de uma avaliacao
+para o mesmo agendamento. Os outros metodos dos controllers fazem consulta,
+alteracao e exclusao.
+
+app.get('/api/health')
+Retorna o estado da API e do banco. Usa HTTP 200 quando o banco esta pronto e HTTP
+503 quando ele esta indisponivel.
+
+5. FLUXO DO USUARIO
+-------------------
+1. O visitante acessa / e escolhe Entrar ou Criar Conta.
+2. Cadastro ou login salva o cliente em petcare_user.
+3. O tutor acessa /perfil e cadastra seus pets.
+4. Em /agendamentos, escolhe pet, servico e periodo.
+5. A API grava o agendamento como PENDENTE.
+6. O pagamento deve usar o ID do agendamento criado.
+7. O logout remove petcare_user e retorna ao login.
+
+6. PENDENCIAS E PROXIMOS PASSOS
+-------------------------------
+- Implementar autenticacao por token e middleware para proteger a API.
+- Integrar o QR Code a um provedor PIX real, usando uma chave PIX e um payload EMV.
+- Criar dados iniciais de servicos no banco.
+- Adicionar testes automatizados para controllers e fluxos do frontend.
+- Atualizar os exemplos JSON para seguirem o contrato dos models.
+- Remover ou separar o arquivo legado API/src/server.js.

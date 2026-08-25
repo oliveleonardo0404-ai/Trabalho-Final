@@ -26,7 +26,7 @@ const agendamentoSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['PENDENTE', 'CONFIRMADO', 'CANCELADO', 'FINALIZADO'],
+        enum: ['PENDENTE', 'PAGO', 'CONFIRMADO', 'CANCELADO', 'FINALIZADO'],
         default: 'PENDENTE'
     }
 }, { timestamps: true });

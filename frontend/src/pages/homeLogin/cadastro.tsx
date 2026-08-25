@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { setStoredUser } from '../../services/auth'
+import { dateInputToIso, formatDateInput, isValidCpf, parseDateInput } from '../../services/validation'
 import './auth.css'
 
 function CadastroPage() {
@@ -55,22 +56,6 @@ function CadastroPage() {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Aqui a regra é bem fácil de explicar: o CPF precisa ter 11 números e não pode ser uma sequência repetida.
-  // Por exemplo: 111.111.111-11 é inválido, mas 123.456.789-09 pode passar.
-  const isValidCpfValue = (value: string) => {
-    const digits = value.replace(/\D/g, '')
-
-    if (digits.length !== 11) {
-      return false
-    }
-
-    if (/^(\d)\1+$/.test(digits)) {
-      return false
-    }
-
-    return true
-  }
-
   // Esta função funciona como uma "checagem final" antes de enviar o formulário.
   // Se faltar alguma informação ou se algum campo não estiver em um formato aceitável,
   // ela bloqueia o cadastro com uma mensagem simples para o usuário.
@@ -105,8 +90,8 @@ function CadastroPage() {
 
     // O CPF precisa ter 11 números e não pode ser uma sequência repetida.
     // Isso evita cadastros inválidos e ajuda a manter os dados mais consistentes.
-    if (!isValidCpfValue(cpf)) {
-      throw new Error('Digite um CPF válido com 11 números.')
+    if (!isValidCpf(cpf)) {
+      throw new Error('Digite um CPF válido com os dígitos verificadores corretos.')
     }
 
     // O telefone também precisa ter DDD e número.
@@ -121,9 +106,9 @@ function CadastroPage() {
     }
 
     // Aqui transformamos a data em objeto Date para confirmar que ela é real e não está no futuro.
-    const nascimentoDate = new Date(nascimento)
-    if (Number.isNaN(nascimentoDate.getTime()) || nascimentoDate > new Date()) {
-      throw new Error('A data de nascimento não pode ser vazia ou futura.')
+    const nascimentoDate = parseDateInput(nascimento)
+    if (!nascimentoDate || nascimentoDate > new Date()) {
+      throw new Error('Informe uma data válida no formato DD/MM/AAAA e que não seja futura.')
     }
 
     // A senha precisa ter uma quantidade mínima de caracteres para oferecer mais segurança.
@@ -149,7 +134,7 @@ function CadastroPage() {
         cpf: form.cpf.trim(),
         numero: form.numero.trim(),
         senha: form.senha,
-        nascimento: form.nascimento ? new Date(form.nascimento).toISOString() : '',
+        nascimento: dateInputToIso(form.nascimento),
       }
 
       const response = await fetch('http://localhost:3001/api/clientes', {
@@ -222,7 +207,7 @@ function CadastroPage() {
 
             <div className="input-group">
               <label htmlFor="cadastro-nascimento">Data de Nascimento</label>
-              <input id="cadastro-nascimento" name="nascimento" type="date" value={form.nascimento} onChange={handleChange} required />
+              <input id="cadastro-nascimento" name="nascimento" type="text" inputMode="numeric" placeholder="DD/MM/AAAA" maxLength={10} value={form.nascimento} onChange={(event) => setForm((prev) => ({ ...prev, nascimento: formatDateInput(event.target.value) }))} required />
             </div>
 
             <div className="input-group">

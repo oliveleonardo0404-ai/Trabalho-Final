@@ -78,6 +78,7 @@ function HomePage() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
   const user = getStoredUser()
   const userId = user?._id || user?.id
+  const isLoggedIn = Boolean(user)
 
   const getPetName = (pet: Agendamento['pet']) => {
     if (typeof pet === 'string') return pet
@@ -167,12 +168,14 @@ function HomePage() {
             em um espaço pensado para o seu melhor amigo.
           </p>
           <div className="hero-actions">
-            <Link to="/login" className="hero-button">
-              Agendar Visita / Entrar
+            <Link to={isLoggedIn ? '/agendamentos' : '/login'} className="hero-button">
+              {isLoggedIn ? 'Agendar Visita' : 'Agendar Visita / Entrar'}
             </Link>
-            <Link to="/cadastro" className="hero-button secondary">
-              Criar Conta
-            </Link>
+            {!isLoggedIn && (
+              <Link to="/cadastro" className="hero-button secondary">
+                Criar Conta
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -209,6 +212,13 @@ function HomePage() {
                     ? new Date(agendamento.data_entrada).toLocaleDateString('pt-BR')
                     : 'Data em breve'}
                 </span>
+                {agendamento.status === 'PENDENTE'
+                  && agendamento._id
+                  && !agendamento._id.startsWith('mock-') && (
+                    <Link to={`/pagamento?agendamento=${agendamento._id}`} className="booking-payment-link">
+                      Pagar agendamento
+                    </Link>
+                  )}
               </article>
             ))}
           </div>

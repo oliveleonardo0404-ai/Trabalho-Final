@@ -5,15 +5,23 @@ const normalizeText = (value) => typeof value === 'string' ? value.trim() : '';
 
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-// Validação didática do CPF: o sistema só exige 11 números e rejeita sequências repetidas.
-// Por exemplo, 111.111.111-11 não entra, mas 123.456.789-09 passa.
 const isValidCpf = (value) => {
     const digits = value.replace(/\D/g, '');
 
-    if (digits.length !== 11) return false;
-    if (/^(\d)\1+$/.test(digits)) return false;
+    if (digits.length !== 11 || /^(\d)\1+$/.test(digits)) return false;
 
-    return true;
+    const calculateDigit = (length) => {
+        let sum = 0;
+
+        for (let index = 0; index < length; index += 1) {
+            sum += Number(digits[index]) * (length + 1 - index);
+        }
+
+        const remainder = sum % 11;
+        return remainder < 2 ? 0 : 11 - remainder;
+    };
+
+    return calculateDigit(9) === Number(digits[9]) && calculateDigit(10) === Number(digits[10]);
 };
 
 // Validação simples do telefone: ele precisa ter DDD + número, sem espaços ou letras.

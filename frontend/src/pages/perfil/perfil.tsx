@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/navbar/navbar'
 import { getStoredUser, type LoggedUser } from '../../services/auth'
+import { dateInputToIso, formatDateInput, parseDateInput } from '../../services/validation'
 import './perfil.css'
 
 type Pet = {
@@ -93,6 +94,12 @@ function PerfilPage() {
 
   const handlePetChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target
+
+    if (name === 'data_nascimento') {
+      setPetForm((prev) => ({ ...prev, data_nascimento: formatDateInput(value) }))
+      return
+    }
+
     setPetForm((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -119,10 +126,10 @@ function PerfilPage() {
       return
     }
 
-    const data = new Date(dataNascimento)
+    const data = parseDateInput(dataNascimento)
     const hoje = new Date()
-    if (Number.isNaN(data.getTime())) {
-      setPetError('Informe uma data de nascimento válida.')
+    if (!data) {
+      setPetError('Informe uma data válida no formato DD/MM/AAAA.')
       return
     }
 
@@ -141,7 +148,7 @@ function PerfilPage() {
           nome,
           raca,
           porte,
-          data_nascimento: data.toISOString(),
+          data_nascimento: dateInputToIso(dataNascimento),
           foto_url: petForm.foto_url.trim(),
           cliente: loggedUser._id || loggedUser.id,
         }),
@@ -236,7 +243,7 @@ function PerfilPage() {
 
             <label className="field">
               <span>Data de Nascimento</span>
-              <input type="date" name="data_nascimento" value={petForm.data_nascimento} onChange={handlePetChange} required />
+              <input type="text" name="data_nascimento" inputMode="numeric" placeholder="DD/MM/AAAA" maxLength={10} value={petForm.data_nascimento} onChange={handlePetChange} required />
             </label>
 
             <label className="field full-width">
