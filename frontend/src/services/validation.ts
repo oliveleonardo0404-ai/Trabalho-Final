@@ -31,21 +31,8 @@ export function dateInputToIso(value: string): string {
   return parseDateInput(value)?.toISOString() ?? ''
 }
 
+// Validação simples de CPF - apenas verifica se tem 11 dígitos
 export function isValidCpf(value: string): boolean {
   const digits = value.replace(/\D/g, '')
-
-  if (digits.length !== 11 || /^(\d)\1+$/.test(digits)) return false
-
-  const calculateDigit = (length: number): number => {
-    let sum = 0
-
-    for (let index = 0; index < length; index += 1) {
-      sum += Number(digits[index]) * (length + 1 - index)
-    }
-
-    const remainder = sum % 11
-    return remainder < 2 ? 0 : 11 - remainder
-  }
-
-  return calculateDigit(9) === Number(digits[9]) && calculateDigit(10) === Number(digits[10])
+  return digits.length === 11
 }

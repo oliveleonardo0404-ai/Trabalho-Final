@@ -6,7 +6,8 @@ const clientesSchema = new mongoose.Schema({
     senha: { type: String, required: true },
     cpf: { type: String, required: true, unique: true },
     numero: { type: String, required: true }, 
-    nascimento: { type: Date, required: true }
+    nascimento: { type: Date, required: true },
+    role: { type: String, enum: ['cliente', 'admin'], default: 'cliente' }
 }, { timestamps: true }); 
 
 const Clientes = mongoose.model('Clientes', clientesSchema);

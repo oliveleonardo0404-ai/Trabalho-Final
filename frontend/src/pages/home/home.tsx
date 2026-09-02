@@ -149,7 +149,7 @@ function HomePage() {
         </div>
 
         <nav className="home-actions">
-          <Link to="/" className="mini-button">
+          <Link to="/home" className="mini-button">
             Início
           </Link>
           <Link to="/perfil" className="mini-button accent">

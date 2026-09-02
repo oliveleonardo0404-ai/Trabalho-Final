@@ -7,6 +7,7 @@ import LoginPage from './pages/homeLogin/login'
 import CadastroPage from './pages/homeLogin/cadastro'
 import AgendamentoPage from './pages/agendamentos/agendamentos'
 import PagamentoPage from './pages/pagamentos/pagamento'
+import AdminPage from './pages/admin/admin'
 
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/perfil" element={<PerfilPage />} />
           <Route path="/agendamentos" element={<AgendamentoPage />} />
           <Route path="/pagamento" element={<PagamentoPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/cadastro" element={<CadastroPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

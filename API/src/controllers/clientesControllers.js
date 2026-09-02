@@ -5,23 +5,10 @@ const normalizeText = (value) => typeof value === 'string' ? value.trim() : '';
 
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
+// Validação simples de CPF - apenas verifica se tem 11 dígitos
 const isValidCpf = (value) => {
     const digits = value.replace(/\D/g, '');
-
-    if (digits.length !== 11 || /^(\d)\1+$/.test(digits)) return false;
-
-    const calculateDigit = (length) => {
-        let sum = 0;
-
-        for (let index = 0; index < length; index += 1) {
-            sum += Number(digits[index]) * (length + 1 - index);
-        }
-
-        const remainder = sum % 11;
-        return remainder < 2 ? 0 : 11 - remainder;
-    };
-
-    return calculateDigit(9) === Number(digits[9]) && calculateDigit(10) === Number(digits[10]);
+    return digits.length === 11;
 };
 
 // Validação simples do telefone: ele precisa ter DDD + número, sem espaços ou letras.
@@ -61,8 +48,8 @@ class clientesController {
                 return res.status(400).json({ message: 'Informe um e-mail válido.' });
             }
 
-            if (senha.length < 6) {
-                return res.status(400).json({ message: 'A senha precisa ter pelo menos 6 caracteres.' });
+            if (!senha) {
+                return res.status(400).json({ message: 'Digite uma senha.' });
             }
 
             if (!isValidCpf(cpf)) {

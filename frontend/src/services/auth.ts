@@ -6,10 +6,12 @@ export type LoggedUser = {
   cpf?: string
   numero?: string
   nascimento?: string
+  role?: 'cliente' | 'admin'
   [key: string]: unknown
 }
 
 const STORAGE_KEY = 'petcare_user'
+const ADMIN_CODE = '1234' // Código pré-setado para ADM
 
 export function getStoredUser(): LoggedUser | null {
   const storedUser = localStorage.getItem(STORAGE_KEY)
@@ -32,4 +34,20 @@ export function setStoredUser(user: LoggedUser): void {
 
 export function clearStoredUser(): void {
   localStorage.removeItem(STORAGE_KEY)
+}
+
+// Função simples para validar código de ADM
+export function isValidAdminCode(code: string): boolean {
+  return code.trim() === ADMIN_CODE
+}
+
+// Função para logar como ADM
+export function loginAsAdmin(): void {
+  const adminUser: LoggedUser = {
+    id: 'admin-001',
+    nome: 'Administrador',
+    email: 'admin@petcare.com',
+    role: 'admin',
+  }
+  setStoredUser(adminUser)
 }

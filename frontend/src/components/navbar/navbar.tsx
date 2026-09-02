@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { clearStoredUser } from '../../services/auth'
+import { clearStoredUser, getStoredUser } from '../../services/auth'
 import './navbar.css'
 
 function Navbar() {
@@ -9,6 +9,8 @@ function Navbar() {
   const isHome = location.pathname === '/home'
   const isPerfil = location.pathname === '/perfil'
   const isAgendamentos = location.pathname === '/agendamentos'
+  const isAdmin = location.pathname === '/admin'
+  const user = getStoredUser()
 
   const handleLogout = () => {
     clearStoredUser()
@@ -42,6 +44,11 @@ function Navbar() {
         <Link to="/perfil" className={`navbar-button accent ${isPerfil ? 'active' : ''}`}>
           Meu Perfil
         </Link>
+        {user?.role === 'admin' && (
+          <Link to="/admin" className={`navbar-button admin-link ${isAdmin ? 'active' : ''}`}>
+            Administração
+          </Link>
+        )}
         <button type="button" onClick={handleLogout} className="navbar-button logout-button">
           Sair
         </button>

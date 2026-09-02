@@ -14,6 +14,10 @@ const servicoSchema = new mongoose.Schema({
         type: Number,
         required: true,
         min: 0
+    },
+    ativo: {
+        type: Boolean,
+        default: true
     }
 }, { timestamps: true });
 

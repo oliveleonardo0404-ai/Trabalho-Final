@@ -88,10 +88,9 @@ function CadastroPage() {
       throw new Error('Informe um e-mail válido.')
     }
 
-    // O CPF precisa ter 11 números e não pode ser uma sequência repetida.
-    // Isso evita cadastros inválidos e ajuda a manter os dados mais consistentes.
+    // Verificação simples de CPF - apenas verificar se tem 11 dígitos
     if (!isValidCpf(cpf)) {
-      throw new Error('Digite um CPF válido com os dígitos verificadores corretos.')
+      throw new Error('Digite um CPF válido com 11 dígitos.')
     }
 
     // O telefone também precisa ter DDD e número.
@@ -111,10 +110,9 @@ function CadastroPage() {
       throw new Error('Informe uma data válida no formato DD/MM/AAAA e que não seja futura.')
     }
 
-    // A senha precisa ter uma quantidade mínima de caracteres para oferecer mais segurança.
-    // Com 6 caracteres já é um começo aceitável para o sistema de teste.
-    if (senha.length < 6) {
-      throw new Error('A senha precisa ter pelo menos 6 caracteres.')
+    // Verificação bem simples de senha - só precisa não estar vazia
+    if (!senha || senha.trim().length === 0) {
+      throw new Error('Digite uma senha.')
     }
   }
 
@@ -212,7 +210,7 @@ function CadastroPage() {
 
             <div className="input-group">
               <label htmlFor="cadastro-senha">Senha</label>
-              <input id="cadastro-senha" name="senha" type="password" value={form.senha} onChange={handleChange} placeholder="Mínimo de 6 caracteres" required />
+              <input id="cadastro-senha" name="senha" type="password" value={form.senha} onChange={handleChange} placeholder="Digite uma senha" required />
             </div>
 
             <button type="submit" className="btn-primary btn-full" disabled={loading}>
