@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { setStoredUser, loginAsAdmin, isValidAdminCode } from '../../services/auth'
 import './auth.css'
@@ -13,12 +13,7 @@ function LoginPage() {
   const [adminCode, setAdminCode] = useState('')
   const [adminError, setAdminError] = useState('')
 
-  // Este bloco é o coração do login:
-  // 1. pega e-mail e senha
-  // 2. envia para a API
-  // 3. verifica se a resposta foi aceita
-  // 4. salva o usuário e direciona para a página principal
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
 
@@ -59,8 +54,7 @@ function LoginPage() {
     }
   }
 
-  // Função para login de ADM
-  const handleAdminLogin = (event: FormEvent<HTMLFormElement>) => {
+  const handleAdminLogin = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     setAdminError('')
 
@@ -119,9 +113,9 @@ function LoginPage() {
                 <div className="input-group">
                   <div className="label-row">
                     <label htmlFor="login-password">Senha</label>
-                    <a href="#" className="forgot-password">
+                    <button type="button" className="forgot-password">
                       Esqueceu a senha?
-                    </a>
+                    </button>
                   </div>
                   <input
                     id="login-password"

@@ -114,6 +114,22 @@
   text-decoration: none;
 }
 
+.booking-card .secondary-link-button,
+.cancel-booking-button {
+  align-self: flex-start;
+  cursor: pointer;
+  font: inherit;
+}
+
+.cancel-booking-button {
+  border: 1px solid #d9cfc6;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: transparent;
+  color: #9b4538;
+  font-weight: 700;
+}
+
 @media (max-width: 700px) {
   .field-group {
     grid-template-columns: 1fr;

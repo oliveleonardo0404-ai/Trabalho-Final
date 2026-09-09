@@ -3,16 +3,17 @@ import bcrypt from 'bcryptjs';
 
 const normalizeText = (value) => typeof value === 'string' ? value.trim() : '';
 
-const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const isValidEmail = (value) => {
+    const atIndex = value.indexOf('@');
+    const domain = value.slice(atIndex + 1);
+    return atIndex > 0 && atIndex === value.lastIndexOf('@') && domain.includes('.');
+};
 
-// Validação simples de CPF - apenas verifica se tem 11 dígitos
 const isValidCpf = (value) => {
     const digits = value.replace(/\D/g, '');
     return digits.length === 11;
 };
 
-// Validação simples do telefone: ele precisa ter DDD + número, sem espaços ou letras.
-// Em outras palavras, é um número de celular ou fixo com 10 ou 11 dígitos úteis.
 const isValidPhone = (value) => {
     const digits = value.replace(/\D/g, '');
     return digits.length >= 10 && digits.length <= 11;
@@ -25,8 +26,7 @@ const isValidBirthDate = (value) => {
     return date <= today;
 };
 
-class clientesController {
-    // Cria um novo cliente, valida campos e salva a senha em formato seguro.
+class ClientesController {
     static async create(req, res) {
         try {
             const nome = normalizeText(req.body.nome);
@@ -40,16 +40,8 @@ class clientesController {
                 return res.status(400).json({ message: 'Todos os dados são obrigatórios.' });
             }
 
-            if (nome.length < 3 || !/^[A-Za-zÀ-ÖØ-öø-ÿ\s']+$/.test(nome)) {
-                return res.status(400).json({ message: 'Informe um nome válido.' });
-            }
-
             if (!isValidEmail(email)) {
                 return res.status(400).json({ message: 'Informe um e-mail válido.' });
-            }
-
-            if (!senha) {
-                return res.status(400).json({ message: 'Digite uma senha.' });
             }
 
             if (!isValidCpf(cpf)) {
@@ -90,7 +82,6 @@ class clientesController {
         }
     }
 
-    // Realiza o login do cliente verificando e-mail e senha criptografada.
     static async login(req, res) {
         try {
             const { email, senha } = req.body;
@@ -118,7 +109,6 @@ class clientesController {
         }
     }
 
-    // Busca todos os clientes cadastrados no sistema.
     static async getAll(req, res) {
         try {
             const listaClientes = await ClientesModel.find().select('-senha');
@@ -128,7 +118,6 @@ class clientesController {
         }
     }
 
-    // Busca um cliente específico pelo ID.
     static async getById(req, res) {
         try {
             const cliente = await ClientesModel.findById(req.params.id).select('-senha');
@@ -139,7 +128,6 @@ class clientesController {
         }
     }
 
-    // Atualiza os dados de um cliente já existente.
     static async update(req, res) {
         try {
             const clienteAtualizado = await ClientesModel.findByIdAndUpdate(
@@ -153,7 +141,6 @@ class clientesController {
         }
     }
 
-    // Remove um cliente do banco pelo ID.
     static async delete(req, res) {
         try {
             await ClientesModel.findByIdAndDelete(req.params.id);
@@ -164,4 +151,4 @@ class clientesController {
     }
 }
 
-export default clientesController;
+export default ClientesController;

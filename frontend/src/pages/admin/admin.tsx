@@ -20,8 +20,17 @@ type ServicoForm = {
   ativo: boolean
 }
 
+type Cliente = {
+  _id: string
+  nome: string
+  email: string
+  numero?: string
+  role?: 'cliente' | 'admin'
+}
+
 const emptyForm: ServicoForm = { nome: '', descricao: '', preco_diaria: '', ativo: true }
 const API_URL = 'http://localhost:3001/api/servicos'
+const CLIENTES_API_URL = 'http://localhost:3001/api/clientes'
 
 function AdminPage() {
   const navigate = useNavigate()
@@ -29,6 +38,8 @@ function AdminPage() {
   const [form, setForm] = useState<ServicoForm>(emptyForm)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [clientesLoading, setClientesLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -38,19 +49,30 @@ function AdminPage() {
       return  
     }
 
-    const loadServicos = async () => {
+    const loadAdminData = async () => {
       try {
-        const response = await fetch(API_URL)
-        if (!response.ok) throw new Error('Não foi possível carregar os serviços.')
-        setServicos(await response.json())
+        const [servicosResponse, clientesResponse] = await Promise.all([
+          fetch(API_URL),
+          fetch(CLIENTES_API_URL),
+        ])
+        if (!servicosResponse.ok) throw new Error('Não foi possível carregar os serviços.')
+        if (!clientesResponse.ok) throw new Error('Não foi possível carregar os clientes.')
+
+        const [servicosData, clientesData] = await Promise.all([
+          servicosResponse.json(),
+          clientesResponse.json(),
+        ])
+        setServicos(servicosData)
+        setClientes(clientesData.filter((cliente: Cliente) => cliente.role !== 'admin'))
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Erro ao carregar serviços.')
       } finally {
         setLoading(false)
+        setClientesLoading(false)
       }
     }
 
-    void loadServicos()
+    void loadAdminData()
   }, [navigate])
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
@@ -115,6 +137,30 @@ function AdminPage() {
       setMessage('Serviço removido.')
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : 'Erro ao remover serviço.')
+    }
+  }
+
+  const handleDeleteCliente = async (cliente: Cliente) => {
+    const loggedUser = getStoredUser()
+    const loggedUserId = loggedUser?._id || loggedUser?.id
+
+    if (cliente._id === loggedUserId) {
+      setError('Não é possível remover o usuário administrador conectado.')
+      return
+    }
+
+    if (!window.confirm(`Remover o acesso de ${cliente.nome}?`)) return
+
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await fetch(`${CLIENTES_API_URL}/${cliente._id}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('Não foi possível remover o cliente.')
+      setClientes((current) => current.filter((item) => item._id !== cliente._id))
+      setMessage('Cliente removido.')
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Erro ao remover cliente.')
     }
   }
 
@@ -206,6 +252,31 @@ function AdminPage() {
               </div>
             )}
           </section>
+        </section>
+
+        <section className="admin-panel clients-panel">
+          <div className="panel-heading">
+            <h2>Clientes com acesso</h2>
+            <span>{clientes.length} cliente(s)</span>
+          </div>
+          {clientesLoading && <p className="empty-state">Carregando clientes...</p>}
+          {!clientesLoading && clientes.length === 0 && <p className="empty-state">Nenhum cliente cadastrado.</p>}
+          {!clientesLoading && clientes.length > 0 && (
+            <div className="clients-list">
+              {clientes.map((cliente) => (
+                <article className="client-item" key={cliente._id}>
+                  <div>
+                    <h3>{cliente.nome}</h3>
+                    <p>{cliente.email}</p>
+                    {cliente.numero && <span>{cliente.numero}</span>}
+                  </div>
+                  <button type="button" className="remove-client-button" onClick={() => handleDeleteCliente(cliente)}>
+                    Remover acesso
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </>

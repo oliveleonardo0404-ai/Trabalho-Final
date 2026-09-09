@@ -31,7 +31,6 @@ export function dateInputToIso(value: string): string {
   return parseDateInput(value)?.toISOString() ?? ''
 }
 
-// Validação simples de CPF - apenas verifica se tem 11 dígitos
 export function isValidCpf(value: string): boolean {
   const digits = value.replace(/\D/g, '')
   return digits.length === 11

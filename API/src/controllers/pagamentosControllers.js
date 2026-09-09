@@ -2,8 +2,7 @@ import PagamentoModel from '../models/pagamentos.js';
 import ClientesModel from '../models/clientes.js';
 import AgendamentoModel from '../models/agendamento.js';
 
-class pagamentosController {
-    // Registra um pagamento vinculado a um cliente e a um agendamento específico.
+class PagamentosController {
     static async create(req, res) {
         try {
             const { cliente, agendamento, valor, metodo, status, data_pagamento } = req.body;
@@ -12,7 +11,6 @@ class pagamentosController {
                 return res.status(400).json({ message: 'Dados obrigatórios não informados.' });
             }
 
-            // Valida se o cliente e o agendamento realmente existem antes de gravar o pagamento.
             const clienteExists = await ClientesModel.findById(cliente);
             if (!clienteExists) return res.status(400).json({ message: 'Cliente não encontrado.' });
 
@@ -35,7 +33,6 @@ class pagamentosController {
         }
     }
 
-    // Lista todos os pagamentos com os dados completos do cliente e do agendamento.
     static async getAll(req, res) {
         try {
             const listaPagamentos = await PagamentoModel.find()
@@ -47,7 +44,6 @@ class pagamentosController {
         }
     }
 
-    // Busca um pagamento específico pelo ID com informações relacionadas.
     static async getById(req, res) {
         try {
             const pagamento = await PagamentoModel.findById(req.params.id)
@@ -60,7 +56,6 @@ class pagamentosController {
         }
     }
 
-    // Atualiza os dados de um pagamento, como valor, método ou status.
     static async update(req, res) {
         try {
             const pagamentoAtualizado = await PagamentoModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -70,7 +65,6 @@ class pagamentosController {
         }
     }
 
-    // Exclui um pagamento do banco pelo ID.
     static async delete(req, res) {
         try {
             await PagamentoModel.findByIdAndDelete(req.params.id);
@@ -81,4 +75,4 @@ class pagamentosController {
     }
 }
 
-export default pagamentosController;
+export default PagamentosController;

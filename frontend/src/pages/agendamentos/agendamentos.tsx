@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type SubmitEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../../components/navbar/navbar'
 import { getStoredUser } from '../../services/auth'
@@ -30,11 +30,36 @@ type AgendamentoForm = {
 type Agendamento = {
   _id: string
   cliente?: string | { _id?: string }
-  pet?: string | { nome?: string }
-  servico?: string | { nome?: string; preco_diaria?: number }
+  pet?: string | { _id?: string; nome?: string }
+  servico?: string | { _id?: string; nome?: string; preco_diaria?: number }
   data_entrada: string
   data_saida: string
   status?: string
+}
+
+const API_URL = 'http://localhost:3001/api'
+
+const getRelatedId = (value?: string | { _id?: string }) => (
+  typeof value === 'string' ? value : value?._id
+)
+
+const validateBookingForm = (form: AgendamentoForm) => {
+  if (!form.pet || !form.servico || !form.data_entrada || !form.data_saida) {
+    return 'Preencha todos os campos do agendamento.'
+  }
+
+  const dataEntrada = parseDateInput(form.data_entrada)
+  const dataSaida = parseDateInput(form.data_saida)
+
+  if (!dataEntrada || !dataSaida) {
+    return 'Informe as datas válidas no formato DD/MM/AAAA.'
+  }
+
+  if (dataSaida <= dataEntrada) {
+    return 'A data de saída precisa ser posterior à data de entrada.'
+  }
+
+  return ''
 }
 
 function AgendamentoPage() {
@@ -52,9 +77,8 @@ function AgendamentoPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
-  // Quando o usuário entra na página de agendamento, a aplicação checa se ele está logado.
-  // Em seguida, busca os pets do tutor e os serviços disponíveis para montar o formulário.
   useEffect(() => {
     if (!user) {
       navigate('/login')
@@ -63,14 +87,14 @@ function AgendamentoPage() {
 
     const loadData = async () => {
       try {
-        const petsResponse = await fetch('http://localhost:3001/api/pets')
-        const servicosResponse = await fetch('http://localhost:3001/api/servicos')
-        const agendamentosResponse = await fetch('http://localhost:3001/api/agendamentos')
+        const petsResponse = await fetch(`${API_URL}/pets`)
+        const servicosResponse = await fetch(`${API_URL}/servicos`)
+        const agendamentosResponse = await fetch(`${API_URL}/agendamentos`)
 
         if (petsResponse.ok) {
           const allPets = await petsResponse.json()
           const ownerPets = allPets.filter((pet: Pet) => {
-            const clienteId = typeof pet.cliente === 'string' ? pet.cliente : pet.cliente?._id
+            const clienteId = getRelatedId(pet.cliente)
             return clienteId === (user._id || user.id)
           })
           setPets(ownerPets)
@@ -85,7 +109,7 @@ function AgendamentoPage() {
           const allAgendamentos: Agendamento[] = await agendamentosResponse.json()
           const ownerAgendamentos = allAgendamentos.filter((agendamento) => {
             const cliente = agendamento.cliente
-            const clienteId = typeof cliente === 'string' ? cliente : cliente?._id
+            const clienteId = getRelatedId(cliente)
             return clienteId === (user._id || user.id)
           })
           setAgendamentos(ownerAgendamentos)
@@ -114,9 +138,7 @@ function AgendamentoPage() {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Esse bloco é responsável por criar o agendamento final.
-  // Ele valida as datas, pega o pet escolhido e o serviço selecionado e envia tudo para a API.
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
     setSuccess('')
@@ -126,38 +148,31 @@ function AgendamentoPage() {
       return
     }
 
-    if (!form.pet || !form.servico || !form.data_entrada || !form.data_saida) {
-      setError('Preencha todos os campos do agendamento.')
-      return
-    }
-
-    const dataEntrada = parseDateInput(form.data_entrada)
-    const dataSaida = parseDateInput(form.data_saida)
-
-    if (!dataEntrada || !dataSaida) {
-      setError('Informe as datas válidas no formato DD/MM/AAAA.')
-      return
-    }
-
-    if (dataSaida <= dataEntrada) {
-      setError('A data de saída precisa ser posterior à data de entrada.')
+    const validationError = validateBookingForm(form)
+    if (validationError) {
+      setError(validationError)
       return
     }
 
     setLoading(true)
+    const isEditing = Boolean(editingId)
+    const endpoint = isEditing ? `${API_URL}/agendamentos/${editingId}` : `${API_URL}/agendamentos`
+    const method = isEditing ? 'PUT' : 'POST'
+    const fallbackError = isEditing ? 'Erro ao editar agendamento' : 'Erro ao criar agendamento'
+    const successMessage = isEditing ? 'Agendamento atualizado com sucesso!' : 'Agendamento criado com sucesso!'
 
     try {
-      const response = await fetch('http://localhost:3001/api/agendamentos', {
-        method: 'POST',
+      const requestBody = {
+        pet: form.pet,
+        servico: form.servico,
+        data_entrada: dateInputToIso(form.data_entrada),
+        data_saida: dateInputToIso(form.data_saida),
+        ...(isEditing ? {} : { cliente: user._id || user.id, status: 'PENDENTE' }),
+      }
+      const response = await fetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cliente: user._id || user.id,
-          pet: form.pet,
-          servico: form.servico,
-          data_entrada: dateInputToIso(form.data_entrada),
-          data_saida: dateInputToIso(form.data_saida),
-          status: 'PENDENTE',
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       const data = await response.json()
@@ -166,21 +181,68 @@ function AgendamentoPage() {
         throw new Error(data.message || 'Erro ao criar agendamento')
       }
 
-      setSuccess('Agendamento criado com sucesso!')
       setForm({ pet: '', servico: '', data_entrada: '', data_saida: '' })
-      const refreshedResponse = await fetch('http://localhost:3001/api/agendamentos')
+      setEditingId(null)
+      setSuccess(successMessage)
+      const refreshedResponse = await fetch(`${API_URL}/agendamentos`)
       if (refreshedResponse.ok) {
         const allAgendamentos: Agendamento[] = await refreshedResponse.json()
         setAgendamentos(allAgendamentos.filter((agendamento) => {
           const cliente = agendamento.cliente
-          const clienteId = typeof cliente === 'string' ? cliente : cliente?._id
+          const clienteId = getRelatedId(cliente)
           return clienteId === (user._id || user.id)
         }))
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar agendamento')
+      setError(err instanceof Error ? err.message : fallbackError)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleEdit = (agendamento: Agendamento) => {
+    const petId = typeof agendamento.pet === 'string' ? agendamento.pet : agendamento.pet?._id
+    const servicoId = typeof agendamento.servico === 'string' ? agendamento.servico : agendamento.servico?._id
+
+    if (!petId || !servicoId) {
+      setError('Não foi possível identificar o pet ou serviço deste agendamento.')
+      return
+    }
+
+    setEditingId(agendamento._id)
+    setForm({
+      pet: petId,
+      servico: servicoId,
+      data_entrada: formatDateInput(agendamento.data_entrada.slice(0, 10).split('-').reverse().join('/')),
+      data_saida: formatDateInput(agendamento.data_saida.slice(0, 10).split('-').reverse().join('/')),
+    })
+    setError('')
+    setSuccess('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setForm({ pet: '', servico: '', data_entrada: '', data_saida: '' })
+    setError('')
+    setSuccess('')
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Deseja apagar este agendamento? Essa ação não pode ser desfeita.')) return
+
+    setError('')
+    setSuccess('')
+    try {
+      const response = await fetch(`${API_URL}/agendamentos/${id}`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message || 'Não foi possível apagar o agendamento.')
+      setAgendamentos((current) => current.filter((item) => item._id !== id))
+      setSuccess('Agendamento apagado.')
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Erro ao apagar agendamento.')
     }
   }
 
@@ -195,7 +257,7 @@ function AgendamentoPage() {
         <section className="card perfil-card agendamento-card">
           <div className="card-title-wrap">
             <span className="card-icon">📅</span>
-            <h2>Dados do Agendamento</h2>
+            <h2>{editingId ? 'Editar Agendamento' : 'Dados do Agendamento'}</h2>
           </div>
 
           {error && <p className="form-error">{error}</p>}
@@ -259,8 +321,11 @@ function AgendamentoPage() {
 
             <div className="action-row">
               <button type="submit" className="save-button" disabled={loading}>
-                {loading ? 'Enviando...' : 'Confirmar Agendamento'}
+                {loading && 'Enviando...'}
+                {!loading && editingId && 'Salvar alterações'}
+                {!loading && !editingId && 'Confirmar Agendamento'}
               </button>
+              {editingId && <button type="button" className="secondary-link-button" onClick={cancelEdit}>Cancelar edição</button>}
               <Link to="/pagamento" className="secondary-link-button">
                 Ir para pagamento
               </Link>
@@ -294,10 +359,18 @@ function AgendamentoPage() {
                       {new Date(agendamento.data_saida).toLocaleDateString('pt-BR')}
                     </span>
                     {isPending && (
-                      <Link to={`/pagamento?agendamento=${agendamento._id}`} className="save-button">
-                        Pagar agendamento
-                      </Link>
+                      <>
+                        <Link to={`/pagamento?agendamento=${agendamento._id}`} className="save-button">
+                          Pagar agendamento
+                        </Link>
+                        <button type="button" className="secondary-link-button" onClick={() => handleEdit(agendamento)}>
+                          Editar
+                        </button>
+                      </>
                     )}
+                    <button type="button" className="cancel-booking-button" onClick={() => handleDelete(agendamento._id)}>
+                      Apagar agendamento
+                    </button>
                   </article>
                 )
               })}

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/navbar/navbar'
 import { getStoredUser, type LoggedUser } from '../../services/auth'
@@ -38,8 +38,6 @@ function PerfilPage() {
   const [petSuccess, setPetSuccess] = useState('')
   const [petLoading, setPetLoading] = useState(false)
 
-  // Esta função busca todos os pets da API e filtra para mostrar só os do tutor atual.
-  // Ou seja, o usuário só vê os animais vinculados ao seu cadastro, e não os pets de outras pessoas.
   const loadPets = async (loggedUser: LoggedUser) => {
     const userId = loggedUser._id || loggedUser.id
     if (!userId) return
@@ -59,8 +57,6 @@ function PerfilPage() {
     }
   }
 
-  // Quando a página abre, ela verifica se o usuário está logado.
-  // Se estiver, carrega os dados dele e também os pets que pertencem a esse cliente.
   useEffect(() => {
     const loggedUser = getStoredUser()
 
@@ -103,9 +99,7 @@ function PerfilPage() {
     setPetForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Este bloco serve para cadastrar um novo pet.
-  // Primeiro ele valida os campos, depois envia os dados para a API com o ID do tutor logado.
-  const handlePetSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handlePetSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPetError('')
     setPetSuccess('')
@@ -232,7 +226,7 @@ function PerfilPage() {
             </label>
 
             <label className="field">
-              <span>Porta</span>
+              <span>Porte</span>
               <select name="porte" value={petForm.porte} onChange={handlePetChange} required>
                 <option value="">Selecione</option>
                 <option value="Pequeno">Pequeno</option>
@@ -265,9 +259,8 @@ function PerfilPage() {
             <h2>Meus Pets Cadastrados</h2>
           </div>
 
-          {loading ? (
-            <p>Carregando pets...</p>
-          ) : pets.length > 0 ? (
+          {loading && <p>Carregando pets...</p>}
+          {!loading && pets.length > 0 && (
             <div className="pet-list">
               {pets.map((pet) => (
                 <article key={pet._id} className="pet-item">
@@ -282,9 +275,8 @@ function PerfilPage() {
                 </article>
               ))}
             </div>
-          ) : (
-            <p>Nenhum pet encontrado para este tutor.</p>
           )}
+          {!loading && pets.length === 0 && <p>Nenhum pet encontrado para este tutor.</p>}
         </section>
       </main>
     </div>

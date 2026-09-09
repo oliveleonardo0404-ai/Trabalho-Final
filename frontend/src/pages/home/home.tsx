@@ -13,6 +13,17 @@ type Agendamento = {
   cliente?: string | { _id?: string }
 }
 
+type RelatedClient = string | { _id?: string } | undefined
+
+const getRelatedClientId = (client: RelatedClient) => (
+  typeof client === 'string' ? client : client?._id
+)
+
+const getPetClientId = (pet: Agendamento['pet']) => {
+  if (!pet || typeof pet === 'string') return undefined
+  return getRelatedClientId(pet.cliente)
+}
+
 const services = [
   {
     title: 'Área Externa & Playground',
@@ -91,8 +102,6 @@ function HomePage() {
   }
 
   useEffect(() => {
-    // Esta função carrega os agendamentos da API e, em seguida,
-    // filtra para mostrar só os registros ligados ao usuário logado.
     const carregarAgendamentos = async () => {
       if (!userId) {
         setAgendamentos([])
@@ -108,32 +117,16 @@ function HomePage() {
 
         const dados: Agendamento[] = await response.json()
 
-        // Aqui fazemos o filtro principal: se o cliente do agendamento for o mesmo que o usuário logado,
-        // ele aparece na tela. Se não for, ele é escondido.
         const agendamentosDoUsuario = dados.filter((agendamento) => {
-          const clienteId = typeof agendamento.cliente === 'string'
-            ? agendamento.cliente
-            : agendamento.cliente?._id
-
-          const petClienteId = typeof agendamento.pet === 'object' && agendamento.pet && 'cliente' in agendamento.pet
-            ? typeof agendamento.pet.cliente === 'string'
-              ? agendamento.pet.cliente
-              : agendamento.pet.cliente?._id
-            : undefined
+          const clienteId = getRelatedClientId(agendamento.cliente)
+          const petClienteId = getPetClientId(agendamento.pet)
 
           return clienteId === userId || petClienteId === userId
         })
 
         setAgendamentos(agendamentosDoUsuario.length > 0 ? agendamentosDoUsuario : [])
       } catch {
-        // Em caso de falha na API, o sistema usa o mock apenas para demonstração,
-        // mas continua respeitando o dono do agendamento.
-        const agendamentosMockados = mockAgendamentos.filter((agendamento) => {
-          const petNome = agendamento.pet?.toString() ?? ''
-          return petNome !== ''
-        })
-
-        setAgendamentos(agendamentosMockados)
+        setAgendamentos(mockAgendamentos)
       }
     }
 
@@ -200,7 +193,6 @@ function HomePage() {
               Ver perfil
             </Link>
           </div>
-          {/* div do agendamento */}
           <div className="booking-grid">
             {agendamentos.map((agendamento) => (
               <article key={agendamento._id ?? getPetName(agendamento.pet)} className="booking-card">

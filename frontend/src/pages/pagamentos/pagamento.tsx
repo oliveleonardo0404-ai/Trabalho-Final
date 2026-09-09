@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type SubmitEvent } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Navbar from '../../components/navbar/navbar'
@@ -34,8 +34,6 @@ function PagamentoPage() {
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Antes do pagamento, a página verifica se existe um usuário autenticado.
-  // Se não existir, o sistema redireciona para o login para proteger o fluxo.
   useEffect(() => {
     if (!user) {
       navigate('/login')
@@ -92,9 +90,7 @@ function PagamentoPage() {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Este bloco registra o pagamento do cliente.
-  // Ele pega o método de pagamento, o valor e envia para a API como comprovante da cobrança.
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
     setSuccess('')
@@ -224,7 +220,7 @@ function PagamentoPage() {
                   <h3>Pagamento via PIX</h3>
                   <p>Escaneie o QR Code para pagar este agendamento.</p>
                 </div>
-                <QRCodeSVG value={pixQrCodeValue} size={190} includeMargin />
+                <QRCodeSVG value={pixQrCodeValue} size={190} marginSize={4} />
               </div>
             )}
 

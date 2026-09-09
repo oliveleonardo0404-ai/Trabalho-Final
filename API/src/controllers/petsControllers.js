@@ -12,8 +12,7 @@ const isValidUrl = (value) => {
     }
 };
 
-class petsController {
-    // Cria um novo pet e valida dados como nome, raça, porte e data de nascimento.
+class PetsController {
     static async create(req, res) {
         try {
             const nome = normalizeText(req.body.nome);
@@ -63,7 +62,6 @@ class petsController {
         }
     }
 
-    // Busca todos os pets e inclui também os dados do cliente relacionado.
     static async getAll(req, res) {
         try {
             const listaPets = await PetsModel.find().populate('cliente');
@@ -73,7 +71,6 @@ class petsController {
         }
     }
 
-    // Busca um pet específico pelo ID e traz o cliente vinculado.
     static async getById(req, res) {
         try {
             const pet = await PetsModel.findById(req.params.id).populate('cliente');
@@ -84,7 +81,6 @@ class petsController {
         }
     }
 
-    // Atualiza os dados de um pet já cadastrado.
     static async update(req, res) {
         try {
             const petAtualizado = await PetsModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -94,7 +90,6 @@ class petsController {
         }
     }
 
-    // Exclui um pet da base de dados pelo ID.
     static async delete(req, res) {
         try {
             await PetsModel.findByIdAndDelete(req.params.id);
@@ -105,4 +100,4 @@ class petsController {
     }
 }
 
-export default petsController;
+export default PetsController;

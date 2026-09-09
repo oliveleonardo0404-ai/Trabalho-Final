@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { setStoredUser } from '../../services/auth'
 import { dateInputToIso, formatDateInput, isValidCpf, parseDateInput } from '../../services/validation'
@@ -17,8 +17,6 @@ function CadastroPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // A ideia aqui é simples: o usuário digita números e a tela vai formatando automaticamente.
-  // Isso deixa o campo mais bonito e evita que a pessoa erre na hora de preencher.
   const formatCpf = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 11)
 
@@ -29,8 +27,6 @@ function CadastroPage() {
     return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
   }
 
-  // A regra do telefone também foi deixada bem simples: só aceitaremos números.
-  // Depois a máscara ajuda a deixar no formato mais natural, como (11) 99999-9999.
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 11)
 
@@ -56,9 +52,6 @@ function CadastroPage() {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Esta função funciona como uma "checagem final" antes de enviar o formulário.
-  // Se faltar alguma informação ou se algum campo não estiver em um formato aceitável,
-  // ela bloqueia o cadastro com uma mensagem simples para o usuário.
   const isValidPhoneValue = (value: string) => {
     const digits = value.replace(/\D/g, '')
 
@@ -73,52 +66,39 @@ function CadastroPage() {
     const nascimento = form.nascimento
     const senha = form.senha
 
-    // Primeiro, verificamos se o nome foi preenchido corretamente.
-    // Se estiver vazio ou tiver menos de 3 letras, o cadastro é bloqueado.
     if (!nome || nome.length < 3) {
       throw new Error('Informe um nome completo válido.')
     }
 
-    // Aqui checamos se o e-mail tem um formato simples e funcional.
-    // O que importa é que exista um texto antes do @, um @ e um ponto depois dele.
-    // Exemplo válido: nome@email.com
     const emailValido = email.includes('@') && email.includes('.') && !email.startsWith('@') && !email.endsWith('.')
 
     if (!emailValido) {
       throw new Error('Informe um e-mail válido.')
     }
 
-    // Verificação simples de CPF - apenas verificar se tem 11 dígitos
     if (!isValidCpf(cpf)) {
       throw new Error('Digite um CPF válido com 11 dígitos.')
     }
 
-    // O telefone também precisa ter DDD e número.
-    // A função limpa tudo que não for número e então valida a quantidade mínima.
     if (!isValidPhoneValue(numero)) {
       throw new Error('Digite um telefone válido com DDD e número.')
     }
 
-    // A data de nascimento precisa existir, porque sem ela não temos como confirmar a idade.
     if (!nascimento) {
       throw new Error('Selecione a data de nascimento.')
     }
 
-    // Aqui transformamos a data em objeto Date para confirmar que ela é real e não está no futuro.
     const nascimentoDate = parseDateInput(nascimento)
     if (!nascimentoDate || nascimentoDate > new Date()) {
       throw new Error('Informe uma data válida no formato DD/MM/AAAA e que não seja futura.')
     }
 
-    // Verificação bem simples de senha - só precisa não estar vazia
     if (!senha || senha.trim().length === 0) {
       throw new Error('Digite uma senha.')
     }
   }
 
-  // Quando o usuário clica em "Criar Conta", este bloco prepara os dados e envia para a API.
-  // Se a resposta vier ok, salva o usuário localmente e leva para a página de perfil.
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
     setLoading(true)

@@ -17,8 +17,7 @@ const parseValidDate = (value) => {
     return date;
 };
 
-class agendamentosController {
-    // Cria um novo agendamento ligando cliente, pet e serviço ao período informado.
+class AgendamentosController {
     static async create(req, res) {
         try {
             const { cliente, pet, servico, data_entrada, data_saida, status } = req.body;
@@ -48,7 +47,6 @@ class agendamentosController {
         }
     }
 
-    // Lista todos os agendamentos com dados completos de cliente, pet e serviço.
     static async getAll(req, res) {
         try {
             const listaAgendamentos = await AgendamentoModel.find()
@@ -61,7 +59,6 @@ class agendamentosController {
         }
     }
 
-    // Busca um agendamento específico pelo ID com os relacionamentos já populados.
     static async getById(req, res) {
         try {
             const agendamento = await AgendamentoModel.findById(req.params.id)
@@ -75,20 +72,38 @@ class agendamentosController {
         }
     }
 
-    // Atualiza dados de um agendamento existente, como status ou datas.
     static async update(req, res) {
         try {
-            const agendamentoAtualizado = await AgendamentoModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+            const agendamento = await AgendamentoModel.findById(req.params.id);
+            if (!agendamento) return res.status(404).json({ message: 'Agendamento não encontrado' });
+
+            const dataEntrada = req.body.data_entrada ?? agendamento.data_entrada;
+            const dataSaida = req.body.data_saida ?? agendamento.data_saida;
+            const parsedEntrada = parseValidDate(dataEntrada);
+            const parsedSaida = parseValidDate(dataSaida);
+            if (!parsedEntrada || !parsedSaida || parsedSaida <= parsedEntrada) {
+                return res.status(400).json({ message: 'Informe um período de datas válido.' });
+            }
+
+            if (req.body.status && !['PENDENTE', 'PAGO', 'CONFIRMADO', 'CANCELADO', 'FINALIZADO'].includes(req.body.status)) {
+                return res.status(400).json({ message: 'Status de agendamento inválido.' });
+            }
+
+            const allowedFields = new Set(['pet', 'servico', 'data_entrada', 'data_saida', 'status']);
+            const updates = Object.fromEntries(
+                Object.entries(req.body).filter(([field]) => allowedFields.has(field)),
+            );
+            const agendamentoAtualizado = await AgendamentoModel.findByIdAndUpdate(req.params.id, updates, { new: true });
             return res.status(200).json(agendamentoAtualizado);
         } catch (error) {
             return res.status(500).json({ message: 'Erro ao atualizar agendamento', error: error.message });
         }
     }
 
-    // Exclui um agendamento da base pelo ID.
     static async delete(req, res) {
         try {
-            await AgendamentoModel.findByIdAndDelete(req.params.id);
+            const agendamento = await AgendamentoModel.findByIdAndDelete(req.params.id);
+            if (!agendamento) return res.status(404).json({ message: 'Agendamento não encontrado' });
             return res.status(200).json({ message: 'Agendamento removido com sucesso' });
         } catch (error) {
             return res.status(500).json({ message: 'Erro ao deletar agendamento', error: error.message });
@@ -96,4 +111,4 @@ class agendamentosController {
     }
 }
 
-export default agendamentosController;
+export default AgendamentosController;

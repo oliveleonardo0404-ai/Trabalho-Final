@@ -11,7 +11,7 @@ export type LoggedUser = {
 }
 
 const STORAGE_KEY = 'petcare_user'
-const ADMIN_CODE = '1234' // Código pré-setado para ADM
+const ADMIN_CODE = '1234'
 
 export function getStoredUser(): LoggedUser | null {
   const storedUser = localStorage.getItem(STORAGE_KEY)
@@ -36,12 +36,10 @@ export function clearStoredUser(): void {
   localStorage.removeItem(STORAGE_KEY)
 }
 
-// Função simples para validar código de ADM
 export function isValidAdminCode(code: string): boolean {
   return code.trim() === ADMIN_CODE
 }
 
-// Função para logar como ADM
 export function loginAsAdmin(): void {
   const adminUser: LoggedUser = {
     id: 'admin-001',

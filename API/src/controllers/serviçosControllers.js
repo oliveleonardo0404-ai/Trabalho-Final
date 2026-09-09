@@ -1,7 +1,6 @@
 import ServicoModel from '../models/serviços.js';
 
-class serviçosController {
-    // Cria um novo tipo de serviço oferecido pela pet shop, como hotel, creche ou escola.
+class ServicosController {
     static async create(req, res) {
         try {
             const { nome, descricao, preco_diaria } = req.body;
@@ -22,7 +21,6 @@ class serviçosController {
         }
     }
 
-    // Busca todos os serviços cadastrados para exibir na interface.
     static async getAll(req, res) {
         try {
             const listaServicos = await ServicoModel.find();
@@ -32,7 +30,6 @@ class serviçosController {
         }
     }
 
-    // Busca um serviço específico pelo ID.
     static async getById(req, res) {
         try {
             const servico = await ServicoModel.findById(req.params.id);
@@ -43,7 +40,6 @@ class serviçosController {
         }
     }
 
-    // Atualiza as informações de um serviço já cadastrado.
     static async update(req, res) {
         try {
             const servicoAtualizado = await ServicoModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -53,7 +49,6 @@ class serviçosController {
         }
     }
 
-    // Remove um serviço da base de dados.
     static async delete(req, res) {
         try {
             await ServicoModel.findByIdAndDelete(req.params.id);
@@ -64,4 +59,4 @@ class serviçosController {
     }
 }
 
-export default serviçosController;
+export default ServicosController;

@@ -9,10 +9,12 @@ import pagamentosRoutes from './src/routes/pagamentosRoutes.js';
 import dns from 'node:dns';
 
 dns.setDefaultResultOrder('ipv4first');
-dns.setServers(['8.8.8.8', '8.8.4.4']);
+const dnsServers = process.env.DNS_SERVERS?.split(',').map((server) => server.trim()).filter(Boolean);
+dns.setServers(dnsServers?.length ? dnsServers : ['8.8.8.8', '8.8.4.4']);
 
 const app = express();
 const PORT = 3001;
+app.disable('x-powered-by');
 
 const databaseReady = await connectDatabase();
 
@@ -41,7 +43,6 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Rotas ativas da API
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/pets', petsRoutes);
 app.use('/api/agendamentos', agendamentosRoutes);

@@ -1,7 +1,6 @@
 import AvaliacaoModel from '../models/avaliação.js';
 
-class avaliacoesController {
-    // Cria uma avaliação de um agendamento, evitando que o mesmo agendamento tenha mais de uma nota.
+class AvaliacoesController {
     static async create(req, res) {
         try {
             const { cliente, agendamento, estrelas, comentario } = req.body;
@@ -10,7 +9,6 @@ class avaliacoesController {
                 return res.status(400).json({ message: 'Dados obrigatórios não informados.' });
             }
 
-            // Impede que exista mais de uma avaliação para o mesmo agendamento.
             const avaliacaoExistente = await AvaliacaoModel.findOne({ agendamento });
             if (avaliacaoExistente) {
                 return res.status(400).json({ message: 'Já existe uma avaliação para este agendamento.' });
@@ -29,7 +27,6 @@ class avaliacoesController {
         }
     }
 
-    // Lista todas as avaliações com os dados do cliente e do agendamento relacionado.
     static async getAll(req, res) {
         try {
             const listaAvaliacoes = await AvaliacaoModel.find()
@@ -41,7 +38,6 @@ class avaliacoesController {
         }
     }
 
-    // Busca uma avaliação específica pelo ID e traz o contexto completo dela.
     static async getById(req, res) {
         try {
             const avaliacao = await AvaliacaoModel.findById(req.params.id)
@@ -54,7 +50,6 @@ class avaliacoesController {
         }
     }
 
-    // Atualiza os dados de uma avaliação existente.
     static async update(req, res) {
         try {
             const avaliacaoAtualizada = await AvaliacaoModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -64,7 +59,6 @@ class avaliacoesController {
         }
     }
 
-    // Remove uma avaliação do sistema.
     static async delete(req, res) {
         try {
             await AvaliacaoModel.findByIdAndDelete(req.params.id);
@@ -75,4 +69,4 @@ class avaliacoesController {
     }
 }
 
-export default avaliacoesController;
+export default AvaliacoesController;
