@@ -37,6 +37,13 @@ type Agendamento = {
   status?: string
 }
 
+type Avaliacao = {
+  _id: string
+  agendamento: string | { _id?: string }
+  estrelas: number
+  comentario?: string
+}
+
 const API_URL = 'http://localhost:3001/api'
 
 const getRelatedId = (value?: string | { _id?: string }) => (
@@ -55,7 +62,7 @@ const validateBookingForm = (form: AgendamentoForm) => {
     return 'Informe as datas válidas no formato DD/MM/AAAA.'
   }
 
-  if (dataSaida <= dataEntrada) {
+  if (dataSaida <= dataEntrada) { 
     return 'A data de saída precisa ser posterior à data de entrada.'
   }
 
@@ -68,6 +75,9 @@ function AgendamentoPage() {
   const [pets, setPets] = useState<Pet[]>([])
   const [servicos, setServicos] = useState<Servico[]>([])
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([])
+  const [avaliacaoForm, setAvaliacaoForm] = useState({ estrelas: '5', comentario: '' })
+  const [avaliandoId, setAvaliandoId] = useState<string | null>(null)
   const [form, setForm] = useState<AgendamentoForm>({
     pet: '',
     servico: '',
@@ -90,6 +100,7 @@ function AgendamentoPage() {
         const petsResponse = await fetch(`${API_URL}/pets`)
         const servicosResponse = await fetch(`${API_URL}/servicos`)
         const agendamentosResponse = await fetch(`${API_URL}/agendamentos`)
+        const avaliacoesResponse = await fetch(`${API_URL}/avaliacoes`)
 
         if (petsResponse.ok) {
           const allPets = await petsResponse.json()
@@ -113,6 +124,10 @@ function AgendamentoPage() {
             return clienteId === (user._id || user.id)
           })
           setAgendamentos(ownerAgendamentos)
+        }
+
+        if (avaliacoesResponse.ok) {
+          setAvaliacoes(await avaliacoesResponse.json())
         }
       } catch {
         setError('Não foi possível carregar pets e serviços no momento.')
@@ -246,6 +261,50 @@ function AgendamentoPage() {
     }
   }
 
+  const getAvaliacaoId = (avaliacao: Avaliacao) => (
+    typeof avaliacao.agendamento === 'string' ? avaliacao.agendamento : avaliacao.agendamento?._id
+  )
+
+  const getAvaliacao = (agendamentoId: string) => avaliacoes.find(
+    (avaliacao) => getAvaliacaoId(avaliacao) === agendamentoId,
+  )
+
+  const handleAvaliacaoChange = (event: React.ChangeEvent<HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = event.target
+    setAvaliacaoForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleAvaliacaoSubmit = async (event: SubmitEvent<HTMLFormElement>, agendamentoId: string) => {
+    event.preventDefault()
+    setError('')
+    setSuccess('')
+    setAvaliandoId(agendamentoId)
+
+    try {
+      const response = await fetch(`${API_URL}/avaliacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cliente: user?._id || user?.id,
+          agendamento: agendamentoId,
+          estrelas: Number(avaliacaoForm.estrelas),
+          comentario: avaliacaoForm.comentario.trim(),
+        }),
+      })
+      const data = await response.json()
+
+      if (!response.ok) throw new Error(data.message || 'Não foi possível registrar a avaliação.')
+
+      setAvaliacoes((current) => [...current, data.data])
+      setAvaliacaoForm({ estrelas: '5', comentario: '' })
+      setSuccess('Avaliação registrada com sucesso!')
+    } catch (evaluationError) {
+      setError(evaluationError instanceof Error ? evaluationError.message : 'Erro ao registrar avaliação.')
+    } finally {
+      setAvaliandoId(null)
+    }
+  }
+
   return (
     <div className="perfil-page">
       <Navbar />
@@ -347,6 +406,7 @@ function AgendamentoPage() {
                 const petName = typeof agendamento.pet === 'string' ? agendamento.pet : agendamento.pet?.nome
                 const serviceName = typeof agendamento.servico === 'string' ? agendamento.servico : agendamento.servico?.nome
                 const isPending = agendamento.status === 'PENDENTE'
+                const avaliacao = getAvaliacao(agendamento._id)
 
                 return (
                   <article key={agendamento._id} className="booking-card">
@@ -367,6 +427,31 @@ function AgendamentoPage() {
                           Editar
                         </button>
                       </>
+                    )}
+                    {agendamento.status === 'PAGO' && (
+                      avaliacao ? (
+                        <div className="rating-summary">
+                          <strong>{'★'.repeat(avaliacao.estrelas)}{'☆'.repeat(5 - avaliacao.estrelas)}</strong>
+                          {avaliacao.comentario && <span>{avaliacao.comentario}</span>}
+                        </div>
+                      ) : (
+                        <form className="rating-form" onSubmit={(event) => handleAvaliacaoSubmit(event, agendamento._id)}>
+                          <label className="field">
+                            <span>Avalie este serviço</span>
+                            <select name="estrelas" value={avaliacaoForm.estrelas} onChange={handleAvaliacaoChange}>
+                              <option value="5">5 estrelas</option>
+                              <option value="4">4 estrelas</option>
+                              <option value="3">3 estrelas</option>
+                              <option value="2">2 estrelas</option>
+                              <option value="1">1 estrela</option>
+                            </select>
+                          </label>
+                          <textarea name="comentario" value={avaliacaoForm.comentario} onChange={handleAvaliacaoChange} maxLength={500} placeholder="Conte como foi o atendimento (opcional)" />
+                          <button type="submit" className="secondary-link-button" disabled={avaliandoId === agendamento._id}>
+                            {avaliandoId === agendamento._id ? 'Enviando...' : 'Enviar avaliação'}
+                          </button>
+                        </form>
+                      )
                     )}
                     <button type="button" className="cancel-booking-button" onClick={() => handleDelete(agendamento._id)}>
                       Apagar agendamento

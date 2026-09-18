@@ -33,6 +33,7 @@ const API_URL = 'http://localhost:3001/api/servicos'
 const CLIENTES_API_URL = 'http://localhost:3001/api/clientes'
 
 function AdminPage() {
+  // Controla a página administrativa, os serviços e os clientes cadastrados.
   const navigate = useNavigate()
   const [servicos, setServicos] = useState<Servico[]>([])
   const [form, setForm] = useState<ServicoForm>(emptyForm)
@@ -44,29 +45,37 @@ function AdminPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    // Verifica o acesso do usuário antes de carregar os dados administrativos.
     if (getStoredUser()?.role !== 'admin') {
       navigate('/home', { replace: true })
       return  
     }
 
+    // Busca os serviços e os clientes ao abrir a página administrativa.
     const loadAdminData = async () => {
       try {
+        // Solicita os dois conjuntos de dados ao mesmo tempo para agilizar o carregamento.
         const [servicosResponse, clientesResponse] = await Promise.all([
           fetch(API_URL),
           fetch(CLIENTES_API_URL),
         ])
+        // Interrompe o carregamento quando alguma resposta da API falha.
         if (!servicosResponse.ok) throw new Error('Não foi possível carregar os serviços.')
         if (!clientesResponse.ok) throw new Error('Não foi possível carregar os clientes.')
 
+        // Converte as respostas para objetos JavaScript.
         const [servicosData, clientesData] = await Promise.all([
           servicosResponse.json(),
           clientesResponse.json(),
         ])
+        // Atualiza as listas e oculta os administradores da lista de clientes.
         setServicos(servicosData)
         setClientes(clientesData.filter((cliente: Cliente) => cliente.role !== 'admin'))
       } catch (loadError) {
+        // Exibe uma mensagem compreensível quando o carregamento não funciona.
         setError(loadError instanceof Error ? loadError.message : 'Erro ao carregar serviços.')
       } finally {
+        // Finaliza os estados de carregamento das duas listas.
         setLoading(false)
         setClientesLoading(false)
       }
@@ -75,11 +84,15 @@ function AdminPage() {
     void loadAdminData()
   }, [navigate])
 
+  // Cria ou atualiza um serviço usando os dados preenchidos no formulário.
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
+    // Evita o recarregamento padrão da página ao enviar o formulário.
     event.preventDefault()
+    // Limpa as mensagens exibidas antes de iniciar uma nova operação.
     setError('')
     setMessage('')
 
+    // Prepara os dados para o formato que o back-end espera.
     const payload = {
       nome: form.nome.trim(),
       descricao: form.descricao.trim(),
@@ -87,60 +100,80 @@ function AdminPage() {
       ativo: form.ativo,
     }
 
+    // Valida os campos obrigatórios antes de enviar a requisição.
     if (!payload.nome || !Number.isFinite(payload.preco_diaria) || payload.preco_diaria < 0) {
       setError('Informe um nome e um preço válido.')
       return
     }
 
     try {
+      // Usa PUT na edição e POST na criação do serviço.
       const response = await fetch(editingId ? `${API_URL}/${editingId}` : API_URL, {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
+      // Interrompe o fluxo quando a API não consegue salvar o serviço.
       if (!response.ok) throw new Error('Não foi possível salvar o serviço.')
 
+      // Converte a resposta para obter o serviço salvo.
       const result = await response.json()
       if (editingId) {
+        // Atualiza o item editado na lista sem recarregar a página.
         setServicos((current) => current.map((servico) => servico._id === editingId ? result : servico))
         setMessage('Serviço atualizado.')
       } else {
+        // Adiciona o novo serviço ao final da lista atual.
         setServicos((current) => [...current, result.data])
         setMessage('Serviço criado.')
       }
+      // Limpa o formulário e encerra o modo de edição.
       setForm(emptyForm)
       setEditingId(null)
     } catch (saveError) {
+      // Exibe o erro retornado pela API ou uma mensagem padrão.
       setError(saveError instanceof Error ? saveError.message : 'Erro ao salvar serviço.')
     }
   }
 
+  // Preenche o formulário com os dados do serviço selecionado para edição.
   const handleEdit = (servico: Servico) => {
+    // Guarda o identificador para que o envio use a rota de atualização.
     setEditingId(servico._id)
+    // Copia os dados do serviço para os campos editáveis do formulário.
     setForm({
       nome: servico.nome,
       descricao: servico.descricao ?? '',
       preco_diaria: String(servico.preco_diaria),
       ativo: servico.ativo ?? true,
     })
+    // Remove mensagens antigas para destacar o novo fluxo de edição.
     setMessage('')
     setError('')
   }
 
+  // Remove um serviço do catálogo após a confirmação do administrador.
   const handleDelete = async (id: string) => {
+    // Solicita confirmação antes de excluir o serviço permanentemente.
     if (!window.confirm('Remover este serviço do catálogo?')) return
 
     try {
+      // Envia a solicitação de remoção para a API.
       const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' })
+      // Interrompe o fluxo quando a API rejeita a remoção.
       if (!response.ok) throw new Error('Não foi possível remover o serviço.')
+      // Retira o serviço removido da lista exibida na tela.
       setServicos((current) => current.filter((servico) => servico._id !== id))
       setMessage('Serviço removido.')
     } catch (deleteError) {
+      // Exibe o erro retornado pela API ou uma mensagem padrão.
       setError(deleteError instanceof Error ? deleteError.message : 'Erro ao remover serviço.')
     }
   }
 
+  // Remove o acesso de um cliente, impedindo a exclusão do administrador conectado.
   const handleDeleteCliente = async (cliente: Cliente) => {
+    // Obtém o identificador do usuário conectado para proteger sua própria conta.
     const loggedUser = getStoredUser()
     const loggedUserId = loggedUser?._id || loggedUser?.id
 
@@ -149,24 +182,33 @@ function AdminPage() {
       return
     }
 
+    // Solicita confirmação antes de remover o acesso do cliente.
     if (!window.confirm(`Remover o acesso de ${cliente.nome}?`)) return
 
+    // Limpa as mensagens anteriores antes de iniciar a remoção.
     setError('')
     setMessage('')
 
     try {
+      // Envia a solicitação para remover o cliente da API.
       const response = await fetch(`${CLIENTES_API_URL}/${cliente._id}`, { method: 'DELETE' })
+      // Interrompe o fluxo quando a API rejeita a remoção.
       if (!response.ok) throw new Error('Não foi possível remover o cliente.')
+      // Atualiza a lista local sem recarregar a página.
       setClientes((current) => current.filter((item) => item._id !== cliente._id))
       setMessage('Cliente removido.')
     } catch (deleteError) {
+      // Exibe o erro retornado pela API ou uma mensagem padrão.
       setError(deleteError instanceof Error ? deleteError.message : 'Erro ao remover cliente.')
     }
   }
 
+  // Cancela a edição atual e restaura o formulário vazio.
   const cancelEdit = () => {
+    // Sai do modo de edição e restaura os valores iniciais.
     setEditingId(null)
     setForm(emptyForm)
+    // Remove o erro que poderia estar relacionado à edição cancelada.
     setError('')
   }
 

@@ -1,8 +1,8 @@
 import { useEffect, useState, type SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/navbar/navbar'
-import { getStoredUser, type LoggedUser } from '../../services/auth'
-import { dateInputToIso, formatDateInput, parseDateInput } from '../../services/validation'
+import { clearStoredUser, getStoredUser, setStoredUser, type LoggedUser } from '../../services/auth'
+import { dateInputToIso, formatDateInput, isValidCpf, parseDateInput } from '../../services/validation'
 import './perfil.css'
 
 type Pet = {
@@ -22,11 +22,52 @@ type PetForm = {
   foto_url: string
 }
 
+type ProfileForm = {
+  nome: string
+  email: string
+  cpf: string
+  numero: string
+  nascimento: string
+}
+
+const formatCpf = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+}
+
+const formatPhone = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+
+  if (digits.length <= 2) return digits
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
+const formatStoredBirthDate = (value?: string) => {
+  if (!value) return ''
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  return `${String(date.getUTCDate()).padStart(2, '0')}/${String(date.getUTCMonth() + 1).padStart(2, '0')}/${date.getUTCFullYear()}`
+}
+
 function PerfilPage() {
   const navigate = useNavigate()
   const [user, setUser] = useState<LoggedUser | null>(getStoredUser())
   const [pets, setPets] = useState<Pet[]>([])
   const [loading, setLoading] = useState(true)
+  const [profileForm, setProfileForm] = useState<ProfileForm>({ nome: '', email: '', cpf: '', numero: '', nascimento: '' })
+  const [profileError, setProfileError] = useState('')
+  const [profileSuccess, setProfileSuccess] = useState('')
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [petForm, setPetForm] = useState<PetForm>({
     nome: '',
     raca: '',
@@ -57,6 +98,16 @@ function PerfilPage() {
     }
   }
 
+  const updateProfileForm = (loggedUser: LoggedUser) => {
+    setProfileForm({
+      nome: loggedUser.nome || '',
+      email: loggedUser.email || '',
+      cpf: formatCpf(loggedUser.cpf || ''),
+      numero: formatPhone(loggedUser.numero || ''),
+      nascimento: formatStoredBirthDate(loggedUser.nascimento),
+    })
+  }
+
   useEffect(() => {
     const loggedUser = getStoredUser()
 
@@ -73,10 +124,12 @@ function PerfilPage() {
           if (response.ok) {
             const serverUser = await response.json()
             setUser(serverUser)
-            localStorage.setItem('petcare_user', JSON.stringify(serverUser))
+            setStoredUser(serverUser)
+            updateProfileForm(serverUser)
           }
         }
 
+        updateProfileForm(loggedUser)
         await loadPets(loggedUser)
       } catch {
         setUser(loggedUser)
@@ -87,6 +140,128 @@ function PerfilPage() {
 
     loadUserData()
   }, [navigate])
+
+  const handleProfileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target
+
+    if (name === 'cpf') {
+      setProfileForm((prev) => ({ ...prev, cpf: formatCpf(value) }))
+      return
+    }
+
+    if (name === 'numero') {
+      setProfileForm((prev) => ({ ...prev, numero: formatPhone(value) }))
+      return
+    }
+
+    if (name === 'nascimento') {
+      setProfileForm((prev) => ({ ...prev, nascimento: formatDateInput(value) }))
+      return
+    }
+
+    setProfileForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleProfileSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setProfileError('')
+    setProfileSuccess('')
+
+    const loggedUser = getStoredUser()
+    const userId = loggedUser?._id || loggedUser?.id
+    const nome = profileForm.nome.trim()
+    const email = profileForm.email.trim()
+    const cpf = profileForm.cpf.trim()
+    const numero = profileForm.numero.trim()
+    const nascimento = profileForm.nascimento
+
+    if (!userId) {
+      navigate('/login')
+      return
+    }
+
+    if (!nome || nome.length < 3) {
+      setProfileError('Informe um nome completo válido.')
+      return
+    }
+
+    if (!email.includes('@') || !email.includes('.')) {
+      setProfileError('Informe um e-mail válido.')
+      return
+    }
+
+    if (!isValidCpf(cpf)) {
+      setProfileError('Digite um CPF válido com 11 dígitos.')
+      return
+    }
+
+    if (numero.replace(/\D/g, '').length < 10) {
+      setProfileError('Digite um telefone válido com DDD e número.')
+      return
+    }
+
+    const birthDate = parseDateInput(nascimento)
+    if (!birthDate || birthDate > new Date()) {
+      setProfileError('Informe uma data de nascimento válida.')
+      return
+    }
+
+    setProfileLoading(true)
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/clientes/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, email, cpf, numero, nascimento: dateInputToIso(nascimento) }),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Erro ao atualizar seus dados')
+      }
+
+      setUser(data)
+      setStoredUser(data)
+      updateProfileForm(data)
+      setProfileSuccess('Dados atualizados com sucesso!')
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : 'Erro ao atualizar seus dados')
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    const loggedUser = getStoredUser()
+    const userId = loggedUser?._id || loggedUser?.id
+
+    if (!userId) {
+      navigate('/login')
+      return
+    }
+
+    const confirmed = window.confirm('Tem certeza que deseja excluir sua conta? Essa ação não pode ser desfeita.')
+    if (!confirmed) return
+
+    setProfileError('')
+    setDeleteLoading(true)
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/clientes/${userId}`, { method: 'DELETE' })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Erro ao excluir sua conta')
+      }
+
+      clearStoredUser()
+      navigate('/')
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : 'Erro ao excluir sua conta')
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
 
   const handlePetChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target
@@ -182,26 +357,50 @@ function PerfilPage() {
             <h2>Meus Dados Pessoais</h2>
           </div>
 
-          <div className="form-grid">
+          {profileError && <p className="form-error">{profileError}</p>}
+          {profileSuccess && <p className="form-success">{profileSuccess}</p>}
+
+          <form className="form-grid" onSubmit={handleProfileSubmit}>
             <label className="field">
               <span>Nome Completo</span>
-              <input type="text" value={user.nome || ''} readOnly />
+              <input type="text" name="nome" value={profileForm.nome} onChange={handleProfileChange} required />
             </label>
 
             <label className="field">
               <span>E-mail</span>
-              <input type="email" value={user.email || ''} readOnly />
+              <input type="email" name="email" value={profileForm.email} onChange={handleProfileChange} required />
             </label>
 
             <label className="field">
               <span>CPF</span>
-              <input type="text" value={user.cpf || ''} readOnly />
+              <input type="text" name="cpf" value={profileForm.cpf} onChange={handleProfileChange} maxLength={14} inputMode="numeric" required />
             </label>
 
             <label className="field">
               <span>Telefone / WhatsApp</span>
-              <input type="tel" value={user.numero || ''} readOnly />
+              <input type="tel" name="numero" value={profileForm.numero} onChange={handleProfileChange} maxLength={15} inputMode="numeric" required />
             </label>
+
+            <label className="field">
+              <span>Data de Nascimento</span>
+              <input type="text" name="nascimento" value={profileForm.nascimento} onChange={handleProfileChange} placeholder="DD/MM/AAAA" maxLength={10} inputMode="numeric" required />
+            </label>
+
+            <div className="profile-submit-row">
+              <button type="submit" className="save-button" disabled={profileLoading || deleteLoading}>
+                {profileLoading ? 'Salvando...' : 'Salvar alterações'}
+              </button>
+            </div>
+          </form>
+
+          <div className="account-danger-zone">
+            <div>
+              <strong>Excluir minha conta</strong>
+              <p>Todos os seus dados de acesso serão removidos.</p>
+            </div>
+            <button type="button" className="delete-button" onClick={handleDeleteAccount} disabled={profileLoading || deleteLoading}>
+              {deleteLoading ? 'Excluindo...' : 'Excluir conta'}
+            </button>
           </div>
         </section>
 

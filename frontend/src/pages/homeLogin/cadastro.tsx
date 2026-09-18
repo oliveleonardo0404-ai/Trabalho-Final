@@ -15,7 +15,7 @@ function CadastroPage() {
     senha: '',
   })
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false) 
 
   const formatCpf = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 11)
@@ -36,7 +36,7 @@ function CadastroPage() {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
   }
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target
 
     if (name === 'cpf') {

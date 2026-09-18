@@ -121,6 +121,58 @@
   font: inherit;
 }
 
+.rating-form {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #eaded5;
+}
+
+.rating-form .field {
+  gap: 5px;
+}
+
+.rating-form select,
+.rating-form textarea {
+  width: 100%;
+  border: 1px solid #d9cfc6;
+  border-radius: 9px;
+  background: #fff;
+  padding: 9px 10px;
+  font: inherit;
+  color: #2d201d;
+}
+
+.rating-form textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.rating-form .secondary-link-button {
+  margin-top: 2px;
+}
+
+.rating-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #eaded5;
+}
+
+.rating-summary strong {
+  color: #c57a32;
+  letter-spacing: 2px;
+}
+
+.rating-summary span {
+  color: #6f5b51;
+  font-size: 0.92rem;
+}
+
 .cancel-booking-button {
   border: 1px solid #d9cfc6;
   border-radius: 10px;

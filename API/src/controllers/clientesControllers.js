@@ -130,22 +130,48 @@ class ClientesController {
 
     static async update(req, res) {
         try {
+            const nome = normalizeText(req.body.nome);
+            const email = normalizeText(req.body.email).toLowerCase();
+            const cpf = normalizeText(req.body.cpf);
+            const numero = normalizeText(req.body.numero);
+            const nascimento = normalizeText(req.body.nascimento);
+
+            if (!nome || !email || !cpf || !numero || !nascimento) {
+                return res.status(400).json({ message: 'Todos os dados pessoais são obrigatórios.' });
+            }
+
+            if (!isValidEmail(email)) return res.status(400).json({ message: 'Informe um e-mail válido.' });
+            if (!isValidCpf(cpf)) return res.status(400).json({ message: 'Informe um CPF válido.' });
+            if (!isValidPhone(numero)) return res.status(400).json({ message: 'Informe um telefone válido.' });
+            if (!isValidBirthDate(nascimento)) return res.status(400).json({ message: 'Informe uma data de nascimento válida.' });
+
+            const duplicate = await ClientesModel.findOne({
+                $or: [{ email }, { cpf }],
+                _id: { $ne: req.params.id },
+            });
+            if (duplicate) return res.status(400).json({ message: 'Email ou CPF já cadastrados.' });
+
             const clienteAtualizado = await ClientesModel.findByIdAndUpdate(
-                req.params.id, 
-                req.body, 
-                { new: true }
+                req.params.id,
+                { nome, email, cpf, numero, nascimento },
+                { new: true, runValidators: true }
             ).select('-senha');
+
+            if (!clienteAtualizado) return res.status(404).json({ message: 'Cliente não encontrado' });
             return res.status(200).json(clienteAtualizado);
         } catch (error) {
+            if (error.name === 'CastError') return res.status(400).json({ message: 'ID de cliente inválido.' });
             return res.status(500).json({ message: 'Erro ao atualizar cliente', error: error.message });
         }
     }
 
     static async delete(req, res) {
         try {
-            await ClientesModel.findByIdAndDelete(req.params.id);
+            const clienteRemovido = await ClientesModel.findByIdAndDelete(req.params.id);
+            if (!clienteRemovido) return res.status(404).json({ message: 'Cliente não encontrado' });
             return res.status(200).json({ message: 'Cliente removido com sucesso' });
         } catch (error) {
+            if (error.name === 'CastError') return res.status(400).json({ message: 'ID de cliente inválido.' });
             return res.status(500).json({ message: 'Erro ao deletar cliente', error: error.message });
         }
     }
